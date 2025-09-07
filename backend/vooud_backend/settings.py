@@ -8,18 +8,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = os.environ.get('RENDER', False) != 'true'
 
-# --- CONFIGURAÇÕES DE HOSTS E SEGURANÇA PARA PRODUÇÃO ---
-ALLOWED_HOSTS = []
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+# --- LÓGICA DE HOSTS E CSRF CORRIGIDA PARA LER VARIÁVEIS DE AMBIENTE ---
+ALLOWED_HOSTS_STRING = os.environ.get('ALLOWED_HOSTS')
+if ALLOWED_HOSTS_STRING:
+    ALLOWED_HOSTS = ALLOWED_HOSTS_STRING.split(',')
+else:
+    ALLOWED_HOSTS = []
 
-# Adiciona o domínio do Vercel e Render a uma lista de origens confiáveis para POST
 CSRF_TRUSTED_ORIGINS_STRING = os.environ.get('CSRF_TRUSTED_ORIGINS')
 if CSRF_TRUSTED_ORIGINS_STRING:
     CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS_STRING.split(',')
+else:
+    CSRF_TRUSTED_ORIGINS = []
 
-# Informa ao Django para confiar no header de proxy do Render para HTTPS
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
