@@ -1,0 +1,117 @@
+.dashboard-container {
+    background-color: #0d1117;
+    color: #fff;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+}
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    background-color: #161b22;
+    border-bottom: 1px solid #30363d;
+}
+.dashboard-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    margin: 0;
+}
+.logout-button {
+    padding: 8px 16px;
+    background-color: transparent;
+    border: 1px solid #d4af37;
+    color: #d4af37;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s, color 0.3s;
+}
+.logout-button:hover {
+    background-color: #d4af37;
+    color: #000;
+}
+/* --- NOVOS ESTILOS PARA O PDV --- */
+.pdv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+    height: calc(100vh - 85px); /* Altura total menos o header */
+}
+.pdv-inventario, .pdv-venda {
+    background-color: #161b22;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+.pdv-inventario h3, .pdv-venda h3 {
+    border-bottom: 1px solid #30363d;
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+.inventario-lista {
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+}
+.inventario-item {
+    background-color: #0d1117;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #30363d;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+}
+.inventario-item:hover {
+    transform: scale(1.05);
+    border-color: #d4af37;
+}
+.inventario-item p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.carrinho-secao, .cliente-secao, .pagamento-secao {
+    margin-bottom: 15px;
+}
+.carrinho-secao {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+.carrinho-item, .carrinho-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+}
+input, select {
+    width: 100%;
+    padding: 10px;
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    color: #fff;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+.finalizar-venda-button {
+    padding: 12px;
+    background: linear-gradient(90deg, #c0c0c0, #d4af37);
+    color: #000;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: auto; /* Empurra o botão para o final */
+}
+.finalizar-venda-button:disabled {
+    background: #555;
+    cursor: not-allowed;
+}
+.error-message { color: tomato; }
+.success-message { color: lightgreen; }

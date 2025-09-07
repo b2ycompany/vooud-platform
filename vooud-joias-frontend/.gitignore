@@ -1,0 +1,32 @@
+# Arquivos de Bytecode do Python
+*.pyc
+__pycache__/
+
+# Ambientes Virtuais
+venv/
+.venv/
+env/
+ENV/
+
+# Banco de Dados local
+db.sqlite3
+*.sqlite3
+
+# Arquivos de configuração de IDEs
+.vscode/
+.idea/
+
+# Arquivos de dependências do Node.js
+node_modules/
+
+# Arquivos de build do React
+build/
+
+# Arquivos de ambiente (NUNCA envie para o GitHub)
+.env
+.env.*
+!.env.example
+
+# Arquivos de log e sistema operacional
+*.log
+.DS_Store

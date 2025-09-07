@@ -1,0 +1,104 @@
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #0d1117; /* Mesmo fundo base da splash */
+  padding: 20px;
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px;
+  background-color: rgba(27, 39, 53, 0.8); /* Fundo semi-transparente */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  backdrop-filter: blur(10px); /* Efeito de vidro fosco, muito moderno */
+  color: #fff;
+  animation: fade-in 0.5s ease-in-out;
+}
+
+.auth-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 30px;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px 15px;
+  background-color: transparent;
+  border: 1px solid #555;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #d4af37; /* Destaque dourado ao focar */
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+.auth-button {
+  width: 100%;
+  padding: 12px 15px;
+  background: linear-gradient(90deg, #c0c0c0, #d4af37); /* Gradiente de prata para ouro */
+  border: none;
+  border-radius: 5px;
+  color: #000;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.3s;
+  text-transform: uppercase;
+}
+
+.auth-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+}
+
+.auth-switch {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.auth-switch p {
+  color: #aaa;
+}
+
+.auth-switch-link {
+  color: #d4af37;
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: text-shadow 0.3s;
+}
+
+.auth-switch-link:hover {
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+}
+
+/* Animação de fade-in para os formulários */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
