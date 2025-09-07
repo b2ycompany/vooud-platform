@@ -6,14 +6,22 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
-# DEBUG é False em produção por padrão
 DEBUG = os.environ.get('RENDER', False) != 'true'
 
-# --- CONFIGURAÇÃO DE HOSTS CORRIGIDA PARA PRODUÇÃO ---
+# --- CONFIGURAÇÕES DE HOSTS E SEGURANÇA PARA PRODUÇÃO ---
 ALLOWED_HOSTS = []
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Adiciona o domínio do Vercel e Render a uma lista de origens confiáveis para POST
+CSRF_TRUSTED_ORIGINS_STRING = os.environ.get('CSRF_TRUSTED_ORIGINS')
+if CSRF_TRUSTED_ORIGINS_STRING:
+    CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS_STRING.split(',')
+
+# Informa ao Django para confiar no header de proxy do Render para HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 INSTALLED_APPS = [
     'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
