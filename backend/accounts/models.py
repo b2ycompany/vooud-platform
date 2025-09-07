@@ -1,25 +1,26 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
-# 1. Importamos nosso gerente customizado
 from .managers import VendedorManager
 
-
 class Vendedor(AbstractUser):
+    # Desabilitamos o campo username padrão
     username = None
+    
+    # Definimos email como o campo único e de login
     email = models.EmailField('endereço de email', unique=True)
 
+    # Nossos campos customizados
     telefone = models.CharField(max_length=20, blank=True, null=True)
-    comissao_padrao = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0.00
-    )
+    comissao_padrao = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
 
+    # --- CORREÇÃO CRÍTICA ---
+    # O campo 'email' será usado para login
     USERNAME_FIELD = 'email'
+    # Como não usamos 'username', a lista de campos obrigatórios para o comando
+    # 'createsuperuser' deve estar vazia.
     REQUIRED_FIELDS = []
 
-    # 2. Conectamos o VendedorManager ao nosso modelo.
-    #    Agora, sempre que o Django for criar um usuário através deste modelo,
-    #    ele usará as regras que definimos no nosso gerente.
+    # Conectamos nosso gerente customizado
     objects = VendedorManager()
 
     def __str__(self):
