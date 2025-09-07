@@ -8,19 +8,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = os.environ.get('RENDER', False) != 'true'
 
-ALLOWED_HOSTS_STRING = os.environ.get('ALLOWED_HOSTS')
-if ALLOWED_HOSTS_STRING:
-    ALLOWED_HOSTS = ALLOWED_HOSTS_STRING.split(',')
-else:
-    ALLOWED_HOSTS = []
+# --- LÓGICA DE HOSTS RECOMENDADA PELO RENDER ---
+ALLOWED_HOSTS = []
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-CSRF_TRUSTED_ORIGINS_STRING = os.environ.get('CSRF_TRUSTED_ORIGINS')
-if CSRF_TRUSTED_ORIGINS_STRING:
-    CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS_STRING.split(',')
-else:
-    CSRF_TRUSTED_ORIGINS = []
-
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
@@ -91,6 +84,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.Vendedor'
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
+
+# --- CONFIGURAÇÃO DE CSRF RECOMENDADA PELO RENDER ---
+CSRF_TRUSTED_ORIGINS = ['https://' + RENDER_EXTERNAL_HOSTNAME] if RENDER_EXTERNAL_HOSTNAME else []
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -101,6 +98,6 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
-# --- CONFIGURAÇÕES FINAIS DE SESSÃO E COOKIES PARA PRODUÇÃO ---
+# --- CONFIGURAÇÕES FINAIS DE SESSÃO E COOKIES ---
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
