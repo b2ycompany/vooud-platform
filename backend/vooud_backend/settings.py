@@ -8,7 +8,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = os.environ.get('RENDER', False) != 'true'
 
-# --- LÓGICA DE HOSTS E CSRF CORRIGIDA PARA LER VARIÁVEIS DE AMBIENTE ---
 ALLOWED_HOSTS_STRING = os.environ.get('ALLOWED_HOSTS')
 if ALLOWED_HOSTS_STRING:
     ALLOWED_HOSTS = ALLOWED_HOSTS_STRING.split(',')
@@ -21,9 +20,7 @@ if CSRF_TRUSTED_ORIGINS_STRING:
 else:
     CSRF_TRUSTED_ORIGINS = []
 
-
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
 
 INSTALLED_APPS = [
     'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
@@ -103,3 +100,7 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
+
+# --- CONFIGURAÇÕES FINAIS DE SESSÃO E COOKIES PARA PRODUÇÃO ---
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
