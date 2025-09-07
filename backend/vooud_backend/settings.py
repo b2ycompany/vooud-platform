@@ -9,10 +9,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = os.environ.get('RENDER', False) != 'true'
 
 ALLOWED_HOSTS = [host for host in os.environ.get('ALLOWED_HOSTS', '').split(',') if host]
-
-# --- LÓGICA DE CORS E CSRF CORRIGIDA E ROBUSTA ---
-CORS_TRUSTED_ORIGINS = [origin for origin in os.environ.get('CORS_TRUSTED_ORIGINS', '').split(',') if origin]
 CSRF_TRUSTED_ORIGINS = [origin for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if origin]
+
+# --- CONFIGURAÇÃO DE CORS DIRETA E PERMISSIVA ---
+# Esta linha permite que QUALQUER domínio faça requisições à sua API.
+# Isso irá resolver o problema de CORS de uma vez por todas.
+CORS_ORIGIN_ALLOW_ALL = True
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = True
@@ -29,7 +31,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # Middleware do CORS
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -53,8 +55,6 @@ if not DEBUG:
     STORAGES = {"staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"}}
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.Vendedor'
-
-# A linha CORS_ALLOWED_ORIGINS foi substituída pela CORS_TRUSTED_ORIGINS acima
 
 REST_FRAMEWORK = {'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',)}
 SIMPLE_JWT = {"ACCESS_TOKEN_LIFETIME": timedelta(minutes=60), "REFRESH_TOKEN_LIFETIME": timedelta(days=1)}
