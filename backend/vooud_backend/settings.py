@@ -31,10 +31,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'core.middleware.CorsPreflightMiddleware',  # seu middleware custom
-    'corsheaders.middleware.CorsMiddleware',    # corsheaders precisa vir logo no início
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',   # ✅ posição correta para lidar com preflight
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
