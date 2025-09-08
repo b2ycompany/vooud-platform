@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
-// A baseURL agora usa a variável de ambiente em produção,
-// ou o endereço local em desenvolvimento.
+// Esta linha lê a variável de ambiente da Vercel em produção, 
+// ou usa 'http://localhost:8000' em desenvolvimento.
 const baseURL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
 
 const axiosInstance = axios.create({
