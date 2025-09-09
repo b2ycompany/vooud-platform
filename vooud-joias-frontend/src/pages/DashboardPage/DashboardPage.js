@@ -1,13 +1,13 @@
-import React, { useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-// --- MUDANÇA 1: Importando o novo hook 'useAuth' em vez do 'AuthContext' ---
+// --- CORREÇÃO: Importando o novo hook 'useAuth' em vez do 'AuthContext' ---
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase';
 import { collection, query, where, getDocs, doc, runTransaction, addDoc, serverTimestamp } from 'firebase/firestore';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
-    // --- MUDANÇA 2: Usando o hook 'useAuth' diretamente ---
+    // --- CORREÇÃO: Usando o hook 'useAuth' diretamente ---
     const { logoutUser, user } = useAuth();
 
     const [inventario, setInventario] = useState([]);
@@ -24,7 +24,6 @@ const DashboardPage = () => {
         if (!user) return;
         setLoading(true);
         try {
-            // A coleção de quiosques deve corresponder à sua estrutura de dados
             const qQuiosque = query(collection(db, "quiosques"), where("vendedorResponsavelId", "==", user.uid));
             const quiosqueSnapshot = await getDocs(qQuiosque);
 
@@ -190,7 +189,7 @@ const DashboardPage = () => {
     if (loading && !quiosque) {
         return <p>Carregando Ponto de Venda...</p>
     }
-    // O restante do seu código JSX permanece exatamente o mesmo
+
     return (
         <div className="dashboard-container">
             <header className="dashboard-header">
