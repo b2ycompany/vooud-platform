@@ -1,43 +1,56 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, deleteUser } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { auth, db } from '../firebase';
 import SplashScreen from '../components/SplashScreen/SplashScreen';
 
+// O contexto continua o mesmo
 const AuthContext = createContext();
-export default AuthContext;
+
+// --- MELHORIA 1: ADICIONANDO O HOOK 'useAuth' ---
+// Este hook simplifica o uso do contexto nos seus componentes
+export const useAuth = () => {
+    return useContext(AuthContext);
+};
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    
-    // Vamos usar dois estados para controlar o carregamento
-    const [authLoading, setAuthLoading] = useState(true); // Controla o carregamento do Firebase
-    const [splashTimer, setSplashTimer] = useState(true); // Controla o tempo mínimo de exibição
+    const [authLoading, setAuthLoading] = useState(true);
+    const [splashTimer, setSplashTimer] = useState(true);
+
+    // --- MELHORIA 2: FUNÇÃO CENTRALIZADA PARA BUSCAR DADOS DO USUÁRIO ---
+    // Evita repetição de código e garante que os dados do usuário estejam sempre completos
+    const fetchAndSetUser = async (firebaseUser) => {
+        if (firebaseUser) {
+            // --- MELHORIA 3: UNIFICANDO O NOME DA COLEÇÃO ---
+            // Padronizado para "usuarios". Mude para "vendedores" se for o padrão do seu projeto.
+            const userDocRef = doc(db, "usuarios", firebaseUser.uid);
+            const userDocSnap = await getDoc(userDocRef);
+
+            if (userDocSnap.exists()) {
+                // Combina os dados do Firebase Auth com os dados do Firestore
+                setUser({ uid: firebaseUser.uid, email: firebaseUser.email, ...userDocSnap.data() });
+            } else {
+                // Caso o usuário exista no Auth mas não no Firestore
+                setUser(firebaseUser);
+            }
+        } else {
+            setUser(null);
+        }
+    };
 
     useEffect(() => {
-        // Gatilho do Firebase: Ouve as mudanças de autenticação
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                const userDocRef = doc(db, "vendedores", firebaseUser.uid);
-                const userDocSnap = await getDoc(userDocRef);
-                if (userDocSnap.exists()) {
-                    setUser({ ...firebaseUser, ...userDocSnap.data() });
-                } else {
-                    setUser(firebaseUser);
-                }
-            } else {
-                setUser(null);
-            }
-            // Avisa que a verificação do Firebase terminou
-            setAuthLoading(false);
+            await fetchAndSetUser(firebaseUser); // Usa a nova função centralizada
+            setAuthLoading(false); // Avisa que a verificação do Firebase terminou
         });
 
-        // Gatilho do Tempo: Garante que a splash fique visível por pelo menos 2 segundos
+        // --- MELHORIA 4: REDUZINDO O TEMPO DA SPLASH SCREEN ---
+        // 2 segundos é um tempo mais agradável para o usuário
         const timer = setTimeout(() => {
             setSplashTimer(false);
-        }, 6000);
+        }, 2000); // Reduzido de 6000ms para 2000ms
 
-        // Limpa os "ouvintes" quando o componente é desmontado
         return () => {
             unsubscribe();
             clearTimeout(timer);
@@ -49,28 +62,45 @@ export const AuthProvider = ({ children }) => {
         try {
             userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const newUser = userCredential.user;
-            await setDoc(doc(db, "vendedores", newUser.uid), {
+            
+            // Padronizando para a coleção "usuarios"
+            await setDoc(doc(db, "usuarios", newUser.uid), {
                 uid: newUser.uid,
                 nome: nome,
                 email: email,
                 role: 'vendedor',
             });
+            // Após registrar, busca os dados completos imediatamente
+            await fetchAndSetUser(newUser);
             return { success: true };
         } catch (error) {
+            // --- MELHORIA 5: TRATAMENTO DE ERRO MAIS AMIGÁVEL ---
+            let friendlyMessage = "Ocorreu um erro ao registrar.";
+            if (error.code === 'auth/email-already-in-use') {
+                friendlyMessage = "Este endereço de e-mail já está em uso.";
+            } else if (error.code === 'auth/weak-password') {
+                friendlyMessage = "A senha é muito fraca. Tente uma mais forte.";
+            }
             console.error("Erro no registro:", error);
             if (userCredential) {
-                await deleteUser(userCredential.user);
+                await deleteUser(userCredential.user); // Tentativa de rollback
             }
-            return { success: false, error: error.message };
+            return { success: false, error: friendlyMessage };
         }
     };
 
     const loginUser = async (email, password) => {
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            // Após o login, busca os dados completos imediatamente
+            await fetchAndSetUser(userCredential.user);
             return { success: true };
         } catch (error) {
-            return { success: false, error: error.message };
+            let friendlyMessage = "Ocorreu um erro ao fazer login.";
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                friendlyMessage = "E-mail ou senha inválidos.";
+            }
+            return { success: false, error: friendlyMessage };
         }
     };
 
@@ -80,14 +110,12 @@ export const AuthProvider = ({ children }) => {
 
     const contextData = {
         user: user,
-        // O 'loading' geral agora depende do loading de autenticação E do timer
         loading: authLoading || splashTimer,
-        registerUser: registerUser,
-        loginUser: loginUser,
-        logoutUser: logoutUser,
+        registerUser,
+        loginUser,
+        logoutUser,
     };
 
-    // A splash screen será exibida enquanto um dos dois gatilhos estiver ativo
     if (authLoading || splashTimer) {
         return <SplashScreen />;
     }
@@ -98,3 +126,6 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
+
+// Remove a exportação default daqui para padronizar
+// export default AuthContext;
