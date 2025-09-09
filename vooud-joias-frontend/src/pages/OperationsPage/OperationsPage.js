@@ -8,7 +8,8 @@ import {
     addQuiosque, 
     getVendedores, 
     getInventarioForQuiosque, 
-    addOrUpdateInventarioItem 
+    addOrUpdateInventarioItem,
+    updateQuiosque // Importa a nova função
 } from '../../services/operationsService';
 import './OperationsPage.css';
 
@@ -34,6 +35,7 @@ const OperationsPage = () => {
 
     const fetchData = useCallback(async () => {
         setLoading(true);
+        setError('');
         try {
             const [lojasData, quiosquesData, vendedoresData, joiasData] = await Promise.all([
                 getLojas(),
@@ -112,10 +114,27 @@ const OperationsPage = () => {
         try {
             await addOrUpdateInventarioItem(selectedQuiosqueId, itemInventario.joiaId, itemInventario.quantidade);
             setSuccess('Inventário atualizado com sucesso!');
-            await handleSelectQuiosque(selectedQuiosqueId); // Atualiza a lista
+            // Atualiza a lista de inventário para refletir a adição
+            await handleSelectQuiosque(selectedQuiosqueId); 
             setItemInventario({ joiaId: '', quantidade: 1 });
         } catch (err) {
             setError("Erro ao adicionar ao inventário.");
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    // --- NOVA FUNÇÃO PARA ATUALIZAR A ASSOCIAÇÃO DO VENDEDOR ---
+    const handleAssociarVendedor = async (quiosqueId, vendedorId) => {
+        setLoading(true);
+        setSuccess('');
+        setError('');
+        try {
+            await updateQuiosque(quiosqueId, { vendedorResponsavelId: vendedorId });
+            setSuccess("Vendedor associado com sucesso!");
+            fetchData(); // Recarrega os dados para refletir a mudança na lista
+        } catch (err) {
+            setError("Erro ao associar vendedor.");
         } finally {
             setLoading(false);
         }
@@ -126,8 +145,8 @@ const OperationsPage = () => {
             {error && <p className="error-message">{error}</p>}
             {success && <p className="success-message">{success}</p>}
             
-            <details className="card">
-                <summary>Gerenciar Lojas e Quiosques</summary>
+            <details className="card" open>
+                <summary>Adicionar Novas Lojas e Quiosques</summary>
                 <div className="operations-grid">
                     <div className="operations-form">
                         <h3>Adicionar Nova Loja</h3>
@@ -154,6 +173,30 @@ const OperationsPage = () => {
                     </div>
                 </div>
             </details>
+
+            {/* --- NOVA SEÇÃO PARA GERENCIAR QUIOSQUES EXISTENTES --- */}
+            <div className="card">
+                <h3>Associar Vendedor a Quiosque</h3>
+                <div className="quiosque-list">
+                    {quiosques.map(q => (
+                        <div key={q.id} className="quiosque-list-item">
+                            <span>{q.identificador}</span>
+                            <div className="quiosque-list-actions">
+                                <select
+                                    value={q.vendedorResponsavelId || ''}
+                                    onChange={(e) => handleAssociarVendedor(q.id, e.target.value)}
+                                    disabled={loading}
+                                >
+                                    <option value="">Nenhum Vendedor</option>
+                                    {vendedores.map(v => (
+                                        <option key={v.id} value={v.id}>{v.nome}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
             <div className="card">
                 <h3>Gerenciar Inventário de Quiosque</h3>

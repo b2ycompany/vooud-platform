@@ -27,7 +27,8 @@ export const addQuiosque = async (quiosqueData) => {
 
 // Busca todos os Vendedores (usuários com role 'vendedor')
 export const getVendedores = async () => {
-    const q = query(collection(db, "vendedores"), where("role", "==", "vendedor"));
+    // --- MODIFICADO PARA BUSCAR USUÁRIOS ---
+    const q = query(collection(db, "usuarios"), where("role", "==", "vendedor"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
@@ -49,17 +50,43 @@ export const addOrUpdateInventarioItem = async (quiosqueId, joiaId, quantidade) 
     const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {
-        // Item já existe, atualiza a quantidade
         const itemExistente = snapshot.docs[0];
         const itemRef = doc(db, "inventario", itemExistente.id);
         const novaQuantidade = itemExistente.data().quantidade + Number(quantidade);
         await updateDoc(itemRef, { quantidade: novaQuantidade });
     } else {
-        // Item não existe, cria um novo
         await addDoc(collection(db, "inventario"), {
             quiosqueId: quiosqueId,
             joiaId: joiaId,
             quantidade: Number(quantidade)
         });
     }
+};
+
+// --- FUNÇÃO NOVA ---
+// Atualiza os dados de um quiosque (ex: associar vendedor)
+export const updateQuiosque = async (quiosqueId, dataToUpdate) => {
+    const quiosqueRef = doc(db, "quiosques", quiosqueId);
+    await updateDoc(quiosqueRef, dataToUpdate);
+};
+
+// --- FUNÇÃO NOVA ---
+// Busca todas as vendas e enriquece com dados do vendedor e quiosque
+export const getVendasComDetalhes = async () => {
+    const vendasSnapshot = await getDocs(collection(db, "vendas"));
+    const vendas = vendasSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Para evitar múltiplas buscas, pegamos todos os vendedores e quiosques uma vez
+    const vendedoresSnapshot = await getDocs(collection(db, "usuarios"));
+    const vendedoresMap = new Map(vendedoresSnapshot.docs.map(doc => [doc.id, doc.data()]));
+
+    const quiosquesSnapshot = await getDocs(collection(db, "quiosques"));
+    const quiosquesMap = new Map(quiosquesSnapshot.docs.map(doc => [doc.id, doc.data()]));
+
+    // Adiciona os nomes aos dados de venda
+    return vendas.map(venda => ({
+        ...venda,
+        nomeVendedor: vendedoresMap.get(venda.vendedorId)?.nome || 'N/A',
+        identificadorQuiosque: quiosquesMap.get(venda.quiosqueId)?.identificador || 'N/A',
+    }));
 };

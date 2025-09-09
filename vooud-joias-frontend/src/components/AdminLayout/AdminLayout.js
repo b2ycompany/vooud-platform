@@ -7,10 +7,16 @@ const AdminLayout = ({ title, children }) => {
     return (
         <div className="admin-layout-container">
             <header className="admin-layout-header">
-                {/* O botão "Voltar" que leva para o dashboard principal */}
-                <Link to="/dashboard" className="back-button">
-                    &larr; Voltar ao Dashboard
-                </Link>
+                <div className="header-nav">
+                    {/* O botão "Voltar" que leva para o dashboard principal */}
+                    <Link to="/dashboard" className="nav-button back-button">
+                        &larr; Voltar ao Dashboard
+                    </Link>
+                    {/* --- NOVO LINK ADICIONADO --- */}
+                    <Link to="/relatorios" className="nav-button">
+                        Ver Relatórios
+                    </Link>
+                </div>
                 <h1>{title}</h1>
             </header>
             <main className="admin-layout-content">
