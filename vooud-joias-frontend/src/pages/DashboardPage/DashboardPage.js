@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-// --- CORREÇÃO: Importando o novo hook 'useAuth' em vez do 'AuthContext' ---
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase';
 import { collection, query, where, getDocs, doc, runTransaction, addDoc, serverTimestamp } from 'firebase/firestore';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
-    // --- CORREÇÃO: Usando o hook 'useAuth' diretamente ---
     const { logoutUser, user } = useAuth();
 
     const [inventario, setInventario] = useState([]);
@@ -24,43 +22,44 @@ const DashboardPage = () => {
         if (!user) return;
         setLoading(true);
         try {
-            const qQuiosque = query(collection(db, "quiosques"), where("vendedorResponsavelId", "==", user.uid));
-            const quiosqueSnapshot = await getDocs(qQuiosque);
+            // A query só deve ser executada para vendedores, admins não têm quiosque associado diretamente
+            if (user.role === 'vendedor') {
+                const qQuiosque = query(collection(db, "quiosques"), where("vendedorResponsavelId", "==", user.uid));
+                const quiosqueSnapshot = await getDocs(qQuiosque);
 
-            if (quiosqueSnapshot.empty) {
-                setError('Nenhum quiosque associado a este vendedor.');
-                setLoading(false);
-                return;
+                if (quiosqueSnapshot.empty) {
+                    setError('Nenhum quiosque associado a este vendedor.');
+                    setLoading(false);
+                    return;
+                }
+                const quiosqueData = { id: quiosqueSnapshot.docs[0].id, ...quiosqueSnapshot.docs[0].data() };
+                setQuiosque(quiosqueData);
+
+                const qInventario = query(collection(db, "inventario"), where("quiosqueId", "==", quiosqueData.id), where("quantidade", ">", 0));
+                const inventarioSnapshot = await getDocs(qInventario);
+                const inventarioItems = inventarioSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (inventarioItems.length > 0) {
+                    const joiaIds = inventarioItems.map(item => item.joiaId);
+                    const qJoias = query(collection(db, "joias"), where("__name__", "in", joiaIds));
+                    const joiasSnapshot = await getDocs(qJoias);
+                    const joiasData = joiasSnapshot.docs.reduce((acc, doc) => {
+                        acc[doc.id] = { id: doc.id, ...doc.data() };
+                        return acc;
+                    }, {});
+
+                    const inventarioCompleto = inventarioItems.map(item => ({
+                        ...item,
+                        joia: joiasData[item.joiaId]
+                    }));
+                    setInventario(inventarioCompleto);
+                } else {
+                    setInventario([]);
+                }
             }
-            const quiosqueData = { id: quiosqueSnapshot.docs[0].id, ...quiosqueSnapshot.docs[0].data() };
-            setQuiosque(quiosqueData);
-
-            const qInventario = query(collection(db, "inventario"), where("quiosqueId", "==", quiosqueData.id), where("quantidade", ">", 0));
-            const inventarioSnapshot = await getDocs(qInventario);
-            const inventarioItems = inventarioSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            if (inventarioItems.length === 0) {
-                setInventario([]);
-                return;
-            }
-            
-            const joiaIds = inventarioItems.map(item => item.joiaId);
-            const qJoias = query(collection(db, "joias"), where("__name__", "in", joiaIds));
-            const joiasSnapshot = await getDocs(qJoias);
-            const joiasData = joiasSnapshot.docs.reduce((acc, doc) => {
-                acc[doc.id] = { id: doc.id, ...doc.data() };
-                return acc;
-            }, {});
-
-            const inventarioCompleto = inventarioItems.map(item => ({
-                ...item,
-                joia: joiasData[item.joiaId]
-            }));
-
-            setInventario(inventarioCompleto);
         } catch (err) {
-            console.error("Erro detalhado:", err);
-            setError('Não foi possível carregar o inventário.');
+            console.error("Erro detalhado ao buscar dados do dashboard:", err);
+            setError(`Não foi possível carregar os dados do dashboard. Verifique suas permissões no Firestore. Erro: ${err.message}`);
         } finally {
             setLoading(false);
         }
@@ -112,7 +111,6 @@ const DashboardPage = () => {
                 let totalCusto = 0;
                 let totalComissao = 0;
 
-                const updates = [];
                 for (const itemCarrinho of carrinho) {
                     const inventarioRef = doc(db, "inventario", itemCarrinho.id);
                     const inventarioDoc = await transaction.get(inventarioRef);
@@ -122,7 +120,7 @@ const DashboardPage = () => {
                     }
                     
                     const novaQuantidade = inventarioDoc.data().quantidade - itemCarrinho.quantidade;
-                    updates.push({ ref: inventarioRef, novaQuantidade });
+                    transaction.update(inventarioRef, { quantidade: novaQuantidade });
                 }
 
                 let clienteId = null;
@@ -167,10 +165,6 @@ const DashboardPage = () => {
                     total_custo: totalCusto,
                     total_comissao: totalComissao,
                 });
-
-                updates.forEach(update => {
-                    transaction.update(update.ref, { quantidade: update.novaQuantidade });
-                });
             });
 
             setSuccess("Venda finalizada com sucesso!");
@@ -186,78 +180,95 @@ const DashboardPage = () => {
         }
     };
 
-    if (loading && !quiosque) {
-        return <p>Carregando Ponto de Venda...</p>
+    if (loading) {
+        return <p>Carregando Dashboard...</p>;
     }
 
     return (
         <div className="dashboard-container">
             <header className="dashboard-header">
-                <h1>VOOUD PDV ({quiosque?.identificador})</h1>
-                <div>
+                <h1>{user?.role === 'admin' ? 'Dashboard Administrador' : `VOOUD PDV (${quiosque?.identificador || 'Nenhum quiosque'})`}</h1>
+                <div className="header-user-info">
                     {user && <span>Olá, {user.nome || user.email}</span>}
-                    {user && user.role === 'admin' && <Link to="/catalogo" className="admin-dashboard-link">Admin</Link>}
                     <button onClick={logoutUser} className="logout-button">Sair</button>
                 </div>
             </header>
-            <main className="pdv-grid">
-                <div className="pdv-inventario">
-                    <h3>Inventário do Quiosque</h3>
-                    <div className="inventario-grid-visual">
-                        {inventario.map(item => (
-                            <div key={item.id} className="joia-card" onClick={() => adicionarAoCarrinho(item)}>
-                                <img src={item.joia.imagem_principal_url || 'https://via.placeholder.com/150'} alt={item.joia.nome} className="joia-card-img" />
-                                <div className="joia-card-info">
-                                    <p className="joia-card-nome">{item.joia.nome}</p>
-                                    <p className="joia-card-preco">R$ {item.joia.preco_venda.toFixed(2)}</p>
-                                    <p className="joia-card-estoque">Estoque: {item.quantidade}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
 
-                <div className="pdv-venda card">
-                    <h3>Nova Venda</h3>
-                    {success && <p className="success-message">{success}</p>}
-                    {error && <p className="error-message">{error}</p>}
-                    <form onSubmit={finalizarVenda}>
-                         <div className="carrinho-secao">
-                            <h4>Carrinho</h4>
-                            {carrinho.length === 0 ? <p>Adicione itens do inventário clicando neles à esquerda.</p> :
-                                carrinho.map(item => (
-                                    <div key={item.joia.id} className="carrinho-item">
-                                        <span>{item.quantidade}x {item.joia.nome}</span>
-                                        <span>R$ {(item.joia.preco_venda * item.quantidade).toFixed(2)}</span>
+            {user?.role === 'admin' && (
+                <nav className="admin-dashboard-nav">
+                    <Link to="/catalogo" className="admin-dashboard-link">Gerenciar Catálogo</Link>
+                    <Link to="/operacoes" className="admin-dashboard-link">Gerenciar Operações</Link>
+                    <Link to="/relatorios" className="admin-dashboard-link">Ver Relatórios</Link>
+                </nav>
+            )}
+
+            {user?.role !== 'admin' && quiosque ? (
+                <main className="pdv-grid">
+                    <div className="pdv-inventario">
+                        <h3>Inventário do Quiosque</h3>
+                        <div className="inventario-grid-visual">
+                            {inventario.map(item => (
+                                <div key={item.id} className="joia-card" onClick={() => adicionarAoCarrinho(item)}>
+                                    <img src={item.joia.imagem_principal_url || 'https://via.placeholder.com/150'} alt={item.joia.nome} className="joia-card-img" />
+                                    <div className="joia-card-info">
+                                        <p className="joia-card-nome">{item.joia.nome}</p>
+                                        <p className="joia-card-preco">R$ {item.joia.preco_venda.toFixed(2)}</p>
+                                        <p className="joia-card-estoque">Estoque: {item.quantidade}</p>
                                     </div>
-                                ))
-                            }
+                                </div>
+                            ))}
                         </div>
-                        <div className="carrinho-total">
-                            <strong>Total:</strong>
-                            <strong>R$ {calcularTotalCarrinho()}</strong>
-                        </div>
-                        <div className="cliente-secao">
-                            <h4>Dados do Cliente</h4>
-                            <input type="text" placeholder="Nome do Cliente" value={cliente.nome} onChange={e => setCliente({...cliente, nome: e.target.value})} required />
-                            <input type="email" placeholder="Email do Cliente (para garantia)" value={cliente.email} onChange={e => setCliente({...cliente, email: e.target.value})} required />
-                            <input type="text" placeholder="WhatsApp (opcional)" value={cliente.whatsapp} onChange={e => setCliente({...cliente, whatsapp: e.target.value})} />
-                        </div>
-                        <div className="pagamento-secao">
-                            <h4>Pagamento</h4>
-                            <select value={metodoPagamento} onChange={e => setMetodoPagamento(e.target.value)}>
-                                <option value="PIX">Pix</option>
-                                <option value="CC">Cartão de Crédito</option>
-                                <option value="CD">Cartão de Débito</option>
-                                <option value="DIN">Dinheiro</option>
-                            </select>
-                        </div>
-                        <button type="submit" className="finalizar-venda-button" disabled={loading || carrinho.length === 0}>
-                            {loading ? 'Processando...' : 'Finalizar Venda'}
-                        </button>
-                    </form>
+                    </div>
+
+                    <div className="pdv-venda card">
+                        <h3>Nova Venda</h3>
+                        {success && <p className="success-message">{success}</p>}
+                        {error && <p className="error-message">{error}</p>}
+                        <form onSubmit={finalizarVenda}>
+                             <div className="carrinho-secao">
+                                <h4>Carrinho</h4>
+                                {carrinho.length === 0 ? <p>Adicione itens do inventário.</p> :
+                                    carrinho.map(item => (
+                                        <div key={item.joia.id} className="carrinho-item">
+                                            <span>{item.quantidade}x {item.joia.nome}</span>
+                                            <span>R$ {(item.joia.preco_venda * item.quantidade).toFixed(2)}</span>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                            <div className="carrinho-total">
+                                <strong>Total:</strong>
+                                <strong>R$ {calcularTotalCarrinho()}</strong>
+                            </div>
+                            <div className="cliente-secao">
+                                <h4>Dados do Cliente</h4>
+                                <input type="text" placeholder="Nome do Cliente" value={cliente.nome} onChange={e => setCliente({...cliente, nome: e.target.value})} required />
+                                <input type="email" placeholder="Email (para garantia)" value={cliente.email} onChange={e => setCliente({...cliente, email: e.target.value})} required />
+                                <input type="text" placeholder="WhatsApp (opcional)" value={cliente.whatsapp} onChange={e => setCliente({...cliente, whatsapp: e.target.value})} />
+                            </div>
+                            <div className="pagamento-secao">
+                                <h4>Pagamento</h4>
+                                <select value={metodoPagamento} onChange={e => setMetodoPagamento(e.target.value)}>
+                                    <option value="PIX">Pix</option>
+                                    <option value="CC">Cartão de Crédito</option>
+                                    <option value="CD">Cartão de Débito</option>
+                                    <option value="DIN">Dinheiro</option>
+                                </select>
+                            </div>
+                            <button type="submit" className="finalizar-venda-button" disabled={loading || carrinho.length === 0}>
+                                {loading ? 'Processando...' : 'Finalizar Venda'}
+                            </button>
+                        </form>
+                    </div>
+                </main>
+            ) : (
+                <div className="dashboard-placeholder">
+                    {user?.role === 'admin' ? 
+                        <p>Bem-vindo, Administrador! Use o menu acima para gerenciar o sistema.</p> :
+                        <p>{error || "Bem-vindo! Se você é um vendedor, entre em contato com um administrador para ser associado a um quiosque."}</p>
+                    }
                 </div>
-            </main>
+            )}
         </div>
     );
 };
