@@ -1,13 +1,21 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import AuthContext from '../context/AuthContext';
+// --- CORREÇÃO 1: Importando o hook 'useAuth' ---
+import { useAuth } from '../context/AuthContext';
 
 const PrivateRoute = () => {
-    // Pega o usuário do nosso contexto de autenticação
-    const { user } = useContext(AuthContext);
+    // --- CORREÇÃO 2: Usando o hook 'useAuth' diretamente ---
+    // Pega o usuário e o estado de carregamento do nosso hook
+    const { user, loading } = useAuth();
 
-    // Se houver um usuário, permite o acesso à rota filha (Outlet)
-    // Se não, redireciona para a página de login ('/')
+    // Enquanto o estado de autenticação está sendo verificado, não renderiza nada
+    // Isso evita um "piscar" da tela de login antes do redirecionamento
+    if (loading) {
+        return null; // Ou um componente de "Carregando..."
+    }
+
+    // Se não estiver carregando e houver um usuário, permite o acesso
+    // Se não, redireciona para a página de login
     return user ? <Outlet /> : <Navigate to="/" />;
 };
 

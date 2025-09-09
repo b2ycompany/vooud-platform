@@ -1,10 +1,12 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import AuthContext from '../../context/AuthContext';
+// --- CORREÇÃO 1: Importando o hook 'useAuth' ---
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/Auth.css';
 
 const RegisterPage = () => {
-    const { registerUser } = useContext(AuthContext);
+    // --- CORREÇÃO 2: Usando o hook 'useAuth' diretamente ---
+    const { registerUser } = useAuth();
     const navigate = useNavigate();
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
