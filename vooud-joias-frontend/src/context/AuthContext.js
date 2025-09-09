@@ -1,57 +1,96 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { jwtDecode } from 'jwt-decode';
-import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../api/axiosInstance'; // 1. Importar nossa instância
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, deleteUser } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { auth, db } from '../firebase';
+import SplashScreen from '../components/SplashScreen/SplashScreen';
 
 const AuthContext = createContext();
 export default AuthContext;
 
 export const AuthProvider = ({ children }) => {
-    const [authTokens, setAuthTokens] = useState(() => localStorage.getItem('authTokens') ? JSON.parse(localStorage.getItem('authTokens')) : null);
-    const [user, setUser] = useState(() => localStorage.getItem('authTokens') ? jwtDecode(JSON.parse(localStorage.getItem('authTokens')).access) : null);
-    const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
+    const [user, setUser] = useState(null);
+    
+    // Vamos usar dois estados para controlar o carregamento
+    const [authLoading, setAuthLoading] = useState(true); // Controla o carregamento do Firebase
+    const [splashTimer, setSplashTimer] = useState(true); // Controla o tempo mínimo de exibição
 
-    const loginUser = async (email, password) => {
-        setLoading(true);
-        try {
-            // 2. Usar axiosInstance e a URL relativa
-            const response = await axiosInstance.post('/api/token/', {
-                email: email,
-                password: password
-            });
-
-            if (response.status === 200) {
-                const data = response.data;
-                setAuthTokens(data);
-                setUser(jwtDecode(data.access));
-                localStorage.setItem('authTokens', JSON.stringify(data));
-                navigate('/dashboard');
-                return null;
+    useEffect(() => {
+        // Gatilho do Firebase: Ouve as mudanças de autenticação
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                const userDocRef = doc(db, "vendedores", firebaseUser.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    setUser({ ...firebaseUser, ...userDocSnap.data() });
+                } else {
+                    setUser(firebaseUser);
+                }
+            } else {
+                setUser(null);
             }
+            // Avisa que a verificação do Firebase terminou
+            setAuthLoading(false);
+        });
+
+        // Gatilho do Tempo: Garante que a splash fique visível por pelo menos 2 segundos
+        const timer = setTimeout(() => {
+            setSplashTimer(false);
+        }, 2000);
+
+        // Limpa os "ouvintes" quando o componente é desmontado
+        return () => {
+            unsubscribe();
+            clearTimeout(timer);
+        };
+    }, []);
+
+    const registerUser = async (email, password, nome) => {
+        let userCredential;
+        try {
+            userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const newUser = userCredential.user;
+            await setDoc(doc(db, "vendedores", newUser.uid), {
+                uid: newUser.uid,
+                nome: nome,
+                email: email,
+                role: 'vendedor',
+            });
+            return { success: true };
         } catch (error) {
-            return "Email ou senha inválidos.";
-        } finally {
-            setLoading(false);
+            console.error("Erro no registro:", error);
+            if (userCredential) {
+                await deleteUser(userCredential.user);
+            }
+            return { success: false, error: error.message };
         }
     };
 
-    const logoutUser = () => {
-        setAuthTokens(null);
-        setUser(null);
-        localStorage.removeItem('authTokens');
-        navigate('/');
+    const loginUser = async (email, password) => {
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    };
+
+    const logoutUser = async () => {
+        await signOut(auth);
     };
 
     const contextData = {
         user: user,
-        authTokens: authTokens,
+        // O 'loading' geral agora depende do loading de autenticação E do timer
+        loading: authLoading || splashTimer,
+        registerUser: registerUser,
         loginUser: loginUser,
         logoutUser: logoutUser,
-        loading: loading,
     };
-    
-    useEffect(() => {}, [authTokens, loading]);
+
+    // A splash screen será exibida enquanto um dos dois gatilhos estiver ativo
+    if (authLoading || splashTimer) {
+        return <SplashScreen />;
+    }
 
     return (
         <AuthContext.Provider value={contextData}>

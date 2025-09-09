@@ -1,40 +1,40 @@
-import React, { useContext, useState } from 'react'; // A correção está aqui: adicionamos o 'useState'
-import { Link } from 'react-router-dom';
+import React, { useState, useContext, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
 import '../../styles/Auth.css';
 
 const LoginPage = () => {
-    // Pegamos a função de login e o estado de loading do nosso contexto
-    const { loginUser, loading } = useContext(AuthContext);
-    
-    // Agora o useState está importado e esta linha funcionará
+    const { loginUser, user } = useContext(AuthContext);
+    const navigate = useNavigate();
     const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         setError(null);
-        
+        setLoading(true);
         const email = event.target.email.value;
         const password = event.target.password.value;
-        
-        // A função loginUser agora retorna uma mensagem de erro se falhar
-        const errorMessage = await loginUser(email, password);
-        
-        if (errorMessage) {
-            setError(errorMessage);
+        const result = await loginUser(email, password);
+        setLoading(false);
+        if (result.error) {
+            setError(result.error);
         }
     };
+    
+    // Efeito para redirecionar se o usuário já estiver logado
+    useEffect(() => {
+        if (user) {
+            navigate('/dashboard');
+        }
+    }, [user, navigate]);
 
     return (
         <div className="auth-container">
             <form className="auth-form" onSubmit={handleSubmit}>
                 <h2 className="auth-title">VOOUD</h2>
-                
-                {/* A exibição de erro continua a mesma */}
                 {error && <p style={{ color: 'tomato', textAlign: 'center' }}>{error}</p>}
-
                 <div className="input-group">
-                    {/* Usamos 'name' para pegar os valores facilmente com event.target */}
                     <input type="email" name="email" className="input-field" placeholder="Email" required />
                 </div>
                 <div className="input-group">

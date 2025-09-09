@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "firebase": "^12.2.1",
     "jwt-decode": "^4.0.0"
   }
 }
