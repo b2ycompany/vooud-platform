@@ -11,6 +11,9 @@ const Busboy = require("busboy");
 admin.initializeApp();
 const storage = admin.storage();
 
+// Nome correto do bucket, como verificado anteriormente
+const bucketName = "vooud-joias-platform.firebasestorage.app";
+
 exports.uploadImage = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     if (req.method !== "POST") {
@@ -28,8 +31,7 @@ exports.uploadImage = functions.https.onRequest((req, res) => {
     busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
       const filepath = `joias/${joiaId}/${filename.filename}`;
       // --- CORREÇÃO APLICADA AQUI ---
-      // Usando o nome do bucket que o comando 'gsutil ls' nos retornou
-      const uploadStream = storage.bucket("vooud-joias-platform.firebasestorage.app").file(filepath).createWriteStream();
+      const uploadStream = storage.bucket(bucketName).file(filepath).createWriteStream();
       file.pipe(uploadStream);
       uploads[filename.filename] = uploadStream;
     });
@@ -42,12 +44,23 @@ exports.uploadImage = functions.https.onRequest((req, res) => {
         }),
       ))
       .then(() => {
+        const fileUploadPromises = [];
+        for (const filename in uploads) {
+          if (Object.prototype.hasOwnProperty.call(uploads, filename)) {
+            const file = storage.bucket(bucketName).file(`joias/${joiaId}/${filename}`);
+            fileUploadPromises.push(file.makePublic());
+          }
+        }
+        return Promise.all(fileUploadPromises);
+      })
+      .then(() => {
         const firstFile = Object.keys(uploads)[0];
         // --- CORREÇÃO APLICADA AQUI TAMBÉM ---
-        const publicUrl = `https://storage.googleapis.com/vooud-joias-platform.firebasestorage.app/joias/${joiaId}/${firstFile}`;
+        const publicUrl = `https://storage.googleapis.com/${bucketName}/joias/${joiaId}/${firstFile}`;
         res.status(200).json({imageUrl: publicUrl});
       })
       .catch((err) => {
+        console.error("Erro no processo de upload:", err);
         res.status(500).json({error: err.message});
       });
     });
