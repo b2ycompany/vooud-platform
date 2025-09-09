@@ -27,7 +27,9 @@ exports.uploadImage = functions.https.onRequest((req, res) => {
 
     busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
       const filepath = `joias/${joiaId}/${filename.filename}`;
-      const uploadStream = storage.bucket("vooud-joias-platform.appspot.com").file(filepath).createWriteStream();
+      // --- CORREÇÃO APLICADA AQUI ---
+      // Usando o nome do bucket que o comando 'gsutil ls' nos retornou
+      const uploadStream = storage.bucket("vooud-joias-platform.firebasestorage.app").file(filepath).createWriteStream();
       file.pipe(uploadStream);
       uploads[filename.filename] = uploadStream;
     });
@@ -41,7 +43,8 @@ exports.uploadImage = functions.https.onRequest((req, res) => {
       ))
       .then(() => {
         const firstFile = Object.keys(uploads)[0];
-        const publicUrl = `https://storage.googleapis.com/vooud-joias-platform.appspot.com/joias/${joiaId}/${firstFile}`;
+        // --- CORREÇÃO APLICADA AQUI TAMBÉM ---
+        const publicUrl = `https://storage.googleapis.com/vooud-joias-platform.firebasestorage.app/joias/${joiaId}/${firstFile}`;
         res.status(200).json({imageUrl: publicUrl});
       })
       .catch((err) => {
