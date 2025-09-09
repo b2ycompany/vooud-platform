@@ -12,7 +12,6 @@ import {
 } from '../../services/catalogService';
 import './CatalogPage.css';
 
-// Componente de Formulário para Joia (Adicionar/Editar)
 const JoiaForm = ({ onSave, categorias, initialData = {}, onCancel, loading }) => {
     const [joia, setJoia] = useState(initialData);
     const [imagens, setImagens] = useState(null);
@@ -24,7 +23,6 @@ const JoiaForm = ({ onSave, categorias, initialData = {}, onCancel, loading }) =
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Garante que os valores são numéricos antes de salvar
         const dataToSave = {
             ...joia,
             preco_venda: parseFloat(joia.preco_venda || 0),
@@ -71,8 +69,6 @@ const JoiaForm = ({ onSave, categorias, initialData = {}, onCancel, loading }) =
     );
 };
 
-
-// Componente Principal da Página de Catálogo
 const CatalogPage = () => {
     const [categorias, setCategorias] = useState([]);
     const [joias, setJoias] = useState([]);

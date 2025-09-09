@@ -33,12 +33,13 @@ export const addJoiaWithImages = async (joiaData, imagens) => {
     });
 
     try {
-        // 2. Faz o upload das imagens UMA POR UMA através da nossa nova API (Cloud Function)
+        // 2. Faz o upload das imagens através da nossa nova API (Cloud Function)
         const urlsImagens = await Promise.all(
             Array.from(imagens).map(async (imagem) => {
                 const formData = new FormData();
-                formData.append(imagem.name, imagem); // O nome do campo não importa muito aqui
+                formData.append(imagem.name, imagem);
 
+                // URL da sua Cloud Function (verificada do seu log de deploy)
                 const functionUrl = `https://us-central1-vooud-joias-platform.cloudfunctions.net/uploadImage?joiaId=${joiaDocRef.id}`;
 
                 // Usamos 'fetch' para enviar o arquivo para a Cloud Function
@@ -49,7 +50,6 @@ export const addJoiaWithImages = async (joiaData, imagens) => {
 
                 const data = await response.json();
                 if (!response.ok) {
-                    // Se a Cloud Function retornar um erro, nós o lançamos
                     throw new Error(data.error || 'Erro no servidor de upload.');
                 }
                 return data.imageUrl; // Retorna a URL pública que a função nos deu
