@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
         // 2 segundos é um tempo mais agradável para o usuário
         const timer = setTimeout(() => {
             setSplashTimer(false);
-        }, 2000); // Reduzido de 6000ms para 2000ms
+        }, 6000); // Reduzido de 6000ms para 2000ms
 
         return () => {
             unsubscribe();
