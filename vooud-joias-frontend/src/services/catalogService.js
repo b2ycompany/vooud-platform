@@ -1,6 +1,6 @@
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import { collection, getDocs, addDoc, doc, deleteDoc, runTransaction, query, where, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+// Não precisamos mais do 'firebase/storage' aqui
 
 export const getCategorias = async () => {
     const categoriasSnapshot = await getDocs(collection(db, "categorias"));
@@ -21,43 +21,55 @@ export const getJoias = async (categoriasList) => {
 };
 
 export const deleteJoia = async (joiaId) => {
-    // No futuro, adicionar lógica para deletar imagens do Storage aqui
     await deleteDoc(doc(db, "joias", joiaId));
 };
 
+// --- FUNÇÃO DE UPLOAD ATUALIZADA PARA USAR A CLOUD FUNCTION ---
 export const addJoiaWithImages = async (joiaData, imagens) => {
-    let joiaDocRef;
-    
-    // Transação para garantir que o SKU é único
-    joiaDocRef = await runTransaction(db, async (transaction) => {
-        const joiasCollectionRef = collection(db, "joias");
-        const skuQuery = query(joiasCollectionRef, where("sku", "==", joiaData.sku));
-        const skuSnapshot = await getDocs(skuQuery);
-
-        if (!skuSnapshot.empty) {
-            throw new Error(`O SKU "${joiaData.sku}" já está em uso.`);
-        }
-        
-        const newDocRef = doc(joiasCollectionRef);
-        transaction.set(newDocRef, { ...joiaData, data_criacao: serverTimestamp() });
-        return newDocRef;
+    // 1. Cria o documento da Joia no Firestore primeiro para obter um ID
+    const joiaDocRef = await addDoc(collection(db, "joias"), {
+        ...joiaData,
+        data_criacao: serverTimestamp()
     });
 
-    // Upload de imagens (fora da transação)
-    const urlsImagens = await Promise.all(
-        Array.from(imagens).map(imagem => {
-            const imagemRef = ref(storage, `joias/${joiaDocRef.id}/${imagem.name}`);
-            return uploadBytes(imagemRef, imagem).then(() => getDownloadURL(imagemRef));
-        })
-    );
+    try {
+        // 2. Faz o upload das imagens UMA POR UMA através da nossa nova API (Cloud Function)
+        const urlsImagens = await Promise.all(
+            Array.from(imagens).map(async (imagem) => {
+                const formData = new FormData();
+                formData.append(imagem.name, imagem); // O nome do campo não importa muito aqui
 
-    // Atualiza o documento com as URLs das imagens
-    await updateDoc(joiaDocRef, {
-        imagem_principal_url: urlsImagens[0],
-        todas_imagens_urls: urlsImagens
-    });
-    
-    return { id: joiaDocRef.id, ...joiaData };
+                const functionUrl = `https://us-central1-vooud-joias-platform.cloudfunctions.net/uploadImage?joiaId=${joiaDocRef.id}`;
+
+                // Usamos 'fetch' para enviar o arquivo para a Cloud Function
+                const response = await fetch(functionUrl, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    // Se a Cloud Function retornar um erro, nós o lançamos
+                    throw new Error(data.error || 'Erro no servidor de upload.');
+                }
+                return data.imageUrl; // Retorna a URL pública que a função nos deu
+            })
+        );
+
+        // 3. Atualiza o documento da joia com as URLs das imagens
+        await updateDoc(joiaDocRef, {
+            imagem_principal_url: urlsImagens[0],
+            todas_imagens_urls: urlsImagens
+        });
+
+        return { id: joiaDocRef.id, ...joiaData };
+
+    } catch (uploadError) {
+        // 4. Se o upload falhar, deletamos a joia que foi criada (rollback)
+        await deleteDoc(doc(db, "joias", joiaDocRef.id));
+        console.error("Upload falhou, joia desfeita (rollback).", uploadError);
+        throw uploadError; // Lança o erro para o componente poder exibi-lo
+    }
 };
 
 export const updateJoia = async (joiaId, joiaData) => {
