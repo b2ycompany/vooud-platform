@@ -1,5 +1,4 @@
 /* Em src/components/AdminLayout/AdminLayout.css */
-
 .admin-layout-header {
     background-color: #333;
     color: white;
@@ -7,19 +6,20 @@
     border-radius: 8px 8px 0 0;
 }
 
-.admin-layout-header .header-nav {
+.header-top-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
-.admin-layout-header h1 {
+.header-top-bar h1 {
     margin: 0;
+    flex-grow: 1;
     text-align: center;
 }
 
-.nav-button {
+.back-button {
     background-color: #555;
     color: white;
     padding: 8px 15px;
@@ -27,13 +27,35 @@
     text-decoration: none;
     font-size: 14px;
     transition: background-color 0.3s;
+    white-space: nowrap; /* Evita que o texto quebre a linha */
 }
 
-.nav-button:hover {
+.back-button:hover {
     background-color: #777;
 }
 
-.back-button {
-    background-color: transparent;
-    border: 1px solid #777;
+.admin-nav {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    border-top: 1px solid #555;
+    padding-top: 15px;
+}
+
+.admin-nav-link {
+    color: #f0f0f0;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.admin-nav-link:hover {
+    background-color: #555;
+}
+
+/* Estilo para o link da página ativa */
+.admin-nav-link.active {
+    background-color: #007bff;
+    color: white;
 }

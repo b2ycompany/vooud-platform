@@ -1,26 +1,31 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom'; // Trocado para NavLink para estilizar o link ativo
 import './AdminLayout.css';
 
-// Este componente recebe um título e "filhos" (o conteúdo da página) como propriedades
 const AdminLayout = ({ title, children }) => {
     return (
         <div className="admin-layout-container">
             <header className="admin-layout-header">
-                <div className="header-nav">
-                    {/* O botão "Voltar" que leva para o dashboard principal */}
-                    <Link to="/dashboard" className="nav-button back-button">
-                        &larr; Voltar ao Dashboard
-                    </Link>
-                    {/* --- NOVO LINK ADICIONADO --- */}
-                    <Link to="/relatorios" className="nav-button">
-                        Ver Relatórios
-                    </Link>
+                <div className="header-top-bar">
+                    <NavLink to="/dashboard" className="nav-button back-button">
+                        &larr; Voltar ao PDV
+                    </NavLink>
+                    <h1>{title}</h1>
                 </div>
-                <h1>{title}</h1>
+                <nav className="admin-nav">
+                    <NavLink to="/catalogo" className="admin-nav-link">
+                        Catálogo
+                    </NavLink>
+                    <NavLink to="/operacoes" className="admin-nav-link">
+                        Operações
+                    </NavLink>
+                    <NavLink to="/relatorios" className="admin-nav-link">
+                        Relatórios
+                    </NavLink>
+                </nav>
             </header>
             <main className="admin-layout-content">
-                {children} {/* Aqui será renderizado o conteúdo específico de cada página */}
+                {children}
             </main>
         </div>
     );
