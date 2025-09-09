@@ -1,6 +1,5 @@
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, doc, deleteDoc, runTransaction, query, where, updateDoc, serverTimestamp } from 'firebase/firestore';
-// Não precisamos mais do 'firebase/storage' aqui
 
 export const getCategorias = async () => {
     const categoriasSnapshot = await getDocs(collection(db, "categorias"));
@@ -40,7 +39,7 @@ export const addJoiaWithImages = async (joiaData, imagens) => {
                 formData.append(imagem.name, imagem);
 
                 // URL da sua Cloud Function (verificada do seu log de deploy)
-                const functionUrl = `https://us-central1-vooud-joias-platform.cloudfunctions.net/uploadImage?joiaId=${joiaDocRef.id}`;
+                const functionUrl = `https://uploadimage-3odxvlsczq-uc.a.run.app?joiaId=${joiaDocRef.id}`;
 
                 // Usamos 'fetch' para enviar o arquivo para a Cloud Function
                 const response = await fetch(functionUrl, {
@@ -52,7 +51,7 @@ export const addJoiaWithImages = async (joiaData, imagens) => {
                 if (!response.ok) {
                     throw new Error(data.error || 'Erro no servidor de upload.');
                 }
-                return data.imageUrl; // Retorna a URL pública que a função nos deu
+                return data.imageUrl;
             })
         );
 
@@ -68,7 +67,7 @@ export const addJoiaWithImages = async (joiaData, imagens) => {
         // 4. Se o upload falhar, deletamos a joia que foi criada (rollback)
         await deleteDoc(doc(db, "joias", joiaDocRef.id));
         console.error("Upload falhou, joia desfeita (rollback).", uploadError);
-        throw uploadError; // Lança o erro para o componente poder exibi-lo
+        throw uploadError;
     }
 };
 
