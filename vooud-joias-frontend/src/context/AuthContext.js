@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
         // Gatilho do Tempo: Garante que a splash fique visível por pelo menos 2 segundos
         const timer = setTimeout(() => {
             setSplashTimer(false);
-        }, 4000);
+        }, 6000);
 
         // Limpa os "ouvintes" quando o componente é desmontado
         return () => {

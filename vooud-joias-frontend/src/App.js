@@ -7,7 +7,8 @@ import { AuthProvider } from './context/AuthContext';
 import LoginPage from './pages/LoginPage/LoginPage';
 import RegisterPage from './pages/RegisterPage/RegisterPage';
 import DashboardPage from './pages/DashboardPage/DashboardPage';
-import CatalogPage from './pages/CatalogPage/CatalogPage'; // 1. Importar a nova página
+import CatalogPage from './pages/CatalogPage/CatalogPage';
+import OperationsPage from './pages/OperationsPage/OperationsPage'; // 1. Importar a nova página
 
 function App() {
   return (
@@ -19,7 +20,8 @@ function App() {
           
           <Route element={<PrivateRoute />}>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/catalogo" element={<CatalogPage />} /> {/* 2. Adicionar a rota */}
+            <Route path="/catalogo" element={<CatalogPage />} />
+            <Route path="/operacoes" element={<OperationsPage />} /> {/* 2. Adicionar a nova rota */}
           </Route>
         </Routes>
       </AuthProvider>

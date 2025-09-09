@@ -1,6 +1,6 @@
 .dashboard-container {
     background-color: #0d1117;
-    color: #fff;
+    color: #c9d1d9;
     min-height: 100vh;
     font-family: Arial, sans-serif;
 }
@@ -8,36 +8,38 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 40px;
+    padding: 15px 30px;
     background-color: #161b22;
     border-bottom: 1px solid #30363d;
 }
 .dashboard-header h1 {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     margin: 0;
+    color: #fff;
+}
+.dashboard-header div {
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
 .logout-button {
-    padding: 8px 16px;
-    background-color: transparent;
-    border: 1px solid #d4af37;
-    color: #d4af37;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
+    padding: 8px 16px; background-color: transparent; border: 1px solid #d4af37;
+    color: #d4af37; border-radius: 5px; cursor: pointer; font-weight: bold;
     transition: background-color 0.3s, color 0.3s;
 }
 .logout-button:hover {
-    background-color: #d4af37;
-    color: #000;
+    background-color: #d4af37; color: #000;
 }
-/* --- NOVOS ESTILOS PARA O PDV --- */
+.admin-dashboard-link {
+    color: #58a6ff; text-decoration: none;
+}
 .pdv-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 2fr 1fr;
     gap: 20px;
     padding: 20px;
-    height: calc(100vh - 85px); /* Altura total menos o header */
+    height: calc(100vh - 75px);
 }
 .pdv-inventario, .pdv-venda {
     background-color: #161b22;
@@ -45,73 +47,90 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 .pdv-inventario h3, .pdv-venda h3 {
     border-bottom: 1px solid #30363d;
     padding-bottom: 10px;
     margin-top: 0;
+    color: #fff;
 }
-.inventario-lista {
+.inventario-grid-visual {
     overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
+    padding: 5px;
 }
-.inventario-item {
-    background-color: #0d1117;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #30363d;
-    cursor: pointer;
-    transition: transform 0.2s, border-color 0.2s;
+.joia-card {
+    background-color: #0d1117; border: 1px solid #30363d;
+    border-radius: 6px; overflow: hidden; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
-.inventario-item:hover {
-    transform: scale(1.05);
+.joia-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
     border-color: #d4af37;
 }
-.inventario-item p {
-    margin: 5px 0;
-    font-size: 0.9rem;
+.joia-card-img {
+    width: 100%; height: 150px;
+    object-fit: cover; background-color: #21262d;
 }
-form {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-.carrinho-secao, .cliente-secao, .pagamento-secao {
-    margin-bottom: 15px;
-}
-.carrinho-secao {
-    flex-grow: 1;
-    overflow-y: auto;
-}
-.carrinho-item, .carrinho-total {
-    display: flex;
-    justify-content: space-between;
-    padding: 5px 0;
-}
-input, select {
-    width: 100%;
+.joia-card-info {
     padding: 10px;
+}
+.joia-card-nome {
+    font-weight: bold; margin: 0 0 5px 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.joia-card-preco {
+    color: #d4af37; margin: 0 0 5px 0; font-size: 1.1rem;
+}
+.joia-card-estoque {
+    font-size: 0.8rem; color: #8b949e; margin: 0;
+}
+.pdv-venda .card {
     background-color: #0d1117;
     border: 1px solid #30363d;
-    color: #fff;
-    border-radius: 5px;
-    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 6px;
+}
+.pdv-venda form {
+    display: flex; flex-direction: column;
+    height: 100%;
+}
+.carrinho-secao {
+    flex-grow: 1; overflow-y: auto;
+    margin-bottom: 15px;
+}
+.carrinho-item {
+    display: flex; justify-content: space-between;
+    padding: 8px 5px; border-bottom: 1px solid #30363d;
+    font-size: 0.9rem;
+}
+.carrinho-total {
+    display: flex; justify-content: space-between;
+    padding: 15px 5px; font-size: 1.2rem;
+    font-weight: bold; border-top: 2px solid #30363d;
+}
+.cliente-secao, .pagamento-secao {
+    margin-bottom: 15px;
+}
+.pdv-venda h4 {
+    margin: 0 0 10px 0;
+}
+.pdv-venda input, .pdv-venda select {
+    width: 100%; padding: 10px; background-color: #0d1117;
+    border: 1px solid #30363d; color: #fff;
+    border-radius: 5px; margin-bottom: 10px; box-sizing: border-box;
 }
 .finalizar-venda-button {
-    padding: 12px;
-    background: linear-gradient(90deg, #c0c0c0, #d4af37);
-    color: #000;
-    font-weight: bold;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: auto; /* Empurra o botão para o final */
+    padding: 12px; background: linear-gradient(90deg, #c0c0c0, #d4af37);
+    color: #000; font-weight: bold; border: none; border-radius: 5px;
+    cursor: pointer; margin-top: auto;
 }
 .finalizar-venda-button:disabled {
-    background: #555;
-    cursor: not-allowed;
+    background: #555; cursor: not-allowed;
 }
-.error-message { color: tomato; }
-.success-message { color: lightgreen; }
+.error-message { color: tomato; text-align: center; margin-bottom: 10px; }
+.success-message { color: lightgreen; text-align: center; margin-bottom: 10px; }

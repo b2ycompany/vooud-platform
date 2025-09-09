@@ -1,0 +1,35 @@
+.admin-layout-container {
+    background-color: #f0f2f5; /* Um cinza claro para o fundo das páginas de admin */
+    min-height: 100vh;
+    color: #333;
+}
+
+.admin-layout-header {
+    background-color: white;
+    padding: 20px 40px;
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.admin-layout-header h1 {
+    margin: 0;
+    margin-top: 10px;
+    font-size: 1.8rem;
+}
+
+.back-button {
+    text-decoration: none;
+    color: #555;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 15px;
+    transition: color 0.2s;
+}
+
+.back-button:hover {
+    color: #007bff;
+}
+
+.admin-layout-content {
+    padding: 20px 40px;
+}
