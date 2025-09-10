@@ -25,10 +25,9 @@ export const addQuiosque = async (quiosqueData) => {
     return { id: docRef.id, ...quiosqueData };
 };
 
-// Busca todos os Vendedores (usuários com role 'vendedor')
+// --- CORRIGIDO: Busca todos os Vendedores da coleção 'vendedores' ---
 export const getVendedores = async () => {
-    // --- MODIFICADO PARA BUSCAR USUÁRIOS ---
-    const q = query(collection(db, "usuarios"), where("role", "==", "vendedor"));
+    const q = query(collection(db, "vendedores"), where("role", "==", "vendedor"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
@@ -63,27 +62,23 @@ export const addOrUpdateInventarioItem = async (quiosqueId, joiaId, quantidade) 
     }
 };
 
-// --- FUNÇÃO NOVA ---
 // Atualiza os dados de um quiosque (ex: associar vendedor)
 export const updateQuiosque = async (quiosqueId, dataToUpdate) => {
     const quiosqueRef = doc(db, "quiosques", quiosqueId);
     await updateDoc(quiosqueRef, dataToUpdate);
 };
 
-// --- FUNÇÃO NOVA ---
 // Busca todas as vendas e enriquece com dados do vendedor e quiosque
 export const getVendasComDetalhes = async () => {
     const vendasSnapshot = await getDocs(collection(db, "vendas"));
     const vendas = vendasSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Para evitar múltiplas buscas, pegamos todos os vendedores e quiosques uma vez
-    const vendedoresSnapshot = await getDocs(collection(db, "usuarios"));
+    const vendedoresSnapshot = await getDocs(collection(db, "vendedores"));
     const vendedoresMap = new Map(vendedoresSnapshot.docs.map(doc => [doc.id, doc.data()]));
 
     const quiosquesSnapshot = await getDocs(collection(db, "quiosques"));
     const quiosquesMap = new Map(quiosquesSnapshot.docs.map(doc => [doc.id, doc.data()]));
 
-    // Adiciona os nomes aos dados de venda
     return vendas.map(venda => ({
         ...venda,
         nomeVendedor: vendedoresMap.get(venda.vendedorId)?.nome || 'N/A',
