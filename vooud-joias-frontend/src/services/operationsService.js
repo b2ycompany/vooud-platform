@@ -1,16 +1,49 @@
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, query, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+
+// --- APRIMORADO: Agora verifica se a loja já existe antes de adicionar ---
+export const addLoja = async (nomeLoja) => {
+    // 1. Normaliza o nome para evitar duplicatas por maiúsculas/minúsculas
+    const nomeNormalizado = nomeLoja.trim().toLowerCase();
+    
+    // 2. Faz uma busca para ver se já existe uma loja com esse nome
+    const q = query(collection(db, "lojas"), where("nome_normalizado", "==", nomeNormalizado));
+    const querySnapshot = await getDocs(q);
+
+    // 3. Se a busca retornar algum resultado, lança um erro
+    if (!querySnapshot.empty) {
+        throw new Error(`A loja "${nomeLoja}" já está cadastrada.`);
+    }
+
+    // 4. Se não houver duplicatas, adiciona a nova loja
+    const docRef = await addDoc(collection(db, "lojas"), { 
+        nome: nomeLoja.trim(),
+        nome_normalizado: nomeNormalizado 
+    });
+    return { id: docRef.id, nome: nomeLoja.trim() };
+};
+
+// --- NOVA FUNÇÃO: Atualiza o nome de uma loja ---
+export const updateLoja = async (lojaId, novoNome) => {
+    const nomeNormalizado = novoNome.trim().toLowerCase();
+    const lojaRef = doc(db, "lojas", lojaId);
+    await updateDoc(lojaRef, {
+        nome: novoNome.trim(),
+        nome_normalizado: nomeNormalizado
+    });
+};
+
+// --- NOVA FUNÇÃO: Exclui uma loja ---
+// CUIDADO: Esta função não verifica se há quiosques associados.
+// Se uma loja for excluída, os quiosques podem ficar "órfãos".
+export const deleteLoja = async (lojaId) => {
+    await deleteDoc(doc(db, "lojas", lojaId));
+};
 
 // Busca todas as Lojas
 export const getLojas = async () => {
     const snapshot = await getDocs(collection(db, "lojas"));
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-// Adiciona uma nova Loja
-export const addLoja = async (nomeLoja) => {
-    const docRef = await addDoc(collection(db, "lojas"), { nome: nomeLoja });
-    return { id: docRef.id, nome: nomeLoja };
 };
 
 // Busca todos os Quiosques
@@ -25,7 +58,7 @@ export const addQuiosque = async (quiosqueData) => {
     return { id: docRef.id, ...quiosqueData };
 };
 
-// --- CORRIGIDO: Busca todos os Vendedores da coleção 'vendedores' ---
+// Busca todos os Vendedores da coleção 'vendedores'
 export const getVendedores = async () => {
     const q = query(collection(db, "vendedores"), where("role", "==", "vendedor"));
     const snapshot = await getDocs(q);

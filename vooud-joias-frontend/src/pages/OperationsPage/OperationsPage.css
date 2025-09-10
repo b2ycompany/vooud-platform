@@ -11,18 +11,11 @@
     margin-bottom: 30px;
 }
 
-.operations-form {
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-}
-
 .operations-form h3 {
     margin-top: 0;
 }
 
-.operations-form input, .operations-form select {
+form input, form select {
     width: 100%;
     padding: 8px;
     margin-bottom: 10px;
@@ -31,7 +24,7 @@
     box-sizing: border-box;
 }
 
-.operations-form button {
+form button {
     width: 100%;
     padding: 10px;
     border: none;
@@ -41,10 +34,9 @@
     cursor: pointer;
 }
 
-.operations-list {
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+form button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
 }
 
 .card {
@@ -100,45 +92,103 @@
     text-align: left;
 }
 
-.action-button.delete-button {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
+/* --- NOVOS ESTILOS PARA FORMULÁRIOS E LISTAS DE GERENCIAMENTO --- */
+.inline-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
 }
 
-/* --- NOVOS ESTILOS PARA LISTA DE QUIOSQUES --- */
-.card-section {
-    margin-top: 30px;
-    border-top: 1px solid #eee;
-    padding-top: 20px;
+.inline-form input {
+    flex-grow: 1;
+    margin-bottom: 0;
 }
 
-.quiosque-list {
+.inline-form button {
+    width: auto;
+}
+
+.item-list {
+    margin-top: 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.quiosque-list-item {
+.list-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid #ddd;
     border-radius: 4px;
     background-color: #f9f9f9;
 }
 
-.quiosque-list-actions {
+.item-actions {
     display: flex;
     gap: 10px;
 }
 
-.quiosque-list-actions select {
-    padding: 8px;
+.action-button {
+    border: none;
+    padding: 6px 12px;
     border-radius: 4px;
-    border: 1px solid #ccc;
+    cursor: pointer;
+    color: white;
+    font-size: 0.9em;
+}
+
+.edit-button {
+    background-color: #007bff;
+}
+
+.edit-button:hover {
+    background-color: #0056b3;
+}
+
+.delete-button {
+    background-color: #dc3545;
+}
+
+.delete-button:hover {
+    background-color: #c82333;
+}
+
+/* Estilos para botões de ação dentro do modal */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+.form-actions button {
+    width: auto;
+}
+
+.cancel-button {
+    background-color: #6c757d;
+}
+
+.save-button {
+    background-color: #28a745;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.success-message {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    margin-bottom: 20px;
 }

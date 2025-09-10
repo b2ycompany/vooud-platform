@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '../../components/AdminLayout/AdminLayout';
+import Modal from '../../components/Modal/Modal'; // Assumindo que você tem um componente Modal
 import { getJoias } from '../../services/catalogService';
 import { 
     getLojas, 
     addLoja, 
+    updateLoja, 
+    deleteLoja, // Funções de Loja atualizadas
     getQuiosques, 
     addQuiosque, 
     getVendedores, 
+    updateQuiosque, 
     getInventarioForQuiosque, 
-    addOrUpdateInventarioItem,
-    updateQuiosque // Importa a nova função
+    addOrUpdateInventarioItem 
 } from '../../services/operationsService';
 import './OperationsPage.css';
 
@@ -22,7 +25,6 @@ const OperationsPage = () => {
     const [inventario, setInventario] = useState([]);
 
     // Estados dos formulários e UI
-    const [nomeLoja, setNomeLoja] = useState('');
     const [novoQuiosque, setNovoQuiosque] = useState({
         identificador: '', lojaId: '', vendedorResponsavelId: '', capacidade_joias: 50
     });
@@ -33,15 +35,20 @@ const OperationsPage = () => {
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
 
+    // --- NOVOS ESTADOS PARA GERENCIAMENTO DE LOJAS ---
+    const [nomeLoja, setNomeLoja] = useState('');
+    const [isLojaModalOpen, setIsLojaModalOpen] = useState(false);
+    const [editingLoja, setEditingLoja] = useState(null); // Guarda a loja sendo editada
+    const [novoNomeLoja, setNovoNomeLoja] = useState('');
+
     const fetchData = useCallback(async () => {
         setLoading(true);
-        setError('');
         try {
             const [lojasData, quiosquesData, vendedoresData, joiasData] = await Promise.all([
                 getLojas(),
                 getQuiosques(),
                 getVendedores(),
-                getJoias([]) // Passa lista vazia pois não precisamos do nome da categoria aqui
+                getJoias([])
             ]);
             setLojas(lojasData);
             setQuiosques(quiosquesData);
@@ -58,6 +65,96 @@ const OperationsPage = () => {
         fetchData();
     }, [fetchData]);
 
+    const clearMessages = () => {
+        setError('');
+        setSuccess('');
+    };
+    
+    // --- FUNÇÕES DE CRUD PARA LOJAS ---
+
+    const handleAddLoja = async (e) => {
+        e.preventDefault();
+        clearMessages();
+        if (!nomeLoja) return;
+        setLoading(true);
+        try {
+            await addLoja(nomeLoja);
+            setSuccess('Loja adicionada com sucesso!');
+            setNomeLoja('');
+            await fetchData(); // Recarrega a lista de lojas
+        } catch (err) {
+            setError(err.message); // Exibe o erro de duplicata
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenEditModal = (loja) => {
+        setEditingLoja(loja);
+        setNovoNomeLoja(loja.nome);
+        setIsLojaModalOpen(true);
+        clearMessages();
+    };
+
+    const handleCloseModal = () => {
+        setIsLojaModalOpen(false);
+        setEditingLoja(null);
+        setNovoNomeLoja('');
+    };
+
+    const handleUpdateLoja = async (e) => {
+        e.preventDefault();
+        clearMessages();
+        if (!novoNomeLoja || !editingLoja) return;
+        setLoading(true);
+        try {
+            await updateLoja(editingLoja.id, novoNomeLoja);
+            setSuccess('Loja atualizada com sucesso!');
+            handleCloseModal();
+            await fetchData();
+        } catch (err) {
+            setError('Erro ao atualizar loja.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteLoja = async (lojaId) => {
+        if (!window.confirm("Tem certeza que deseja excluir esta loja? Esta ação não pode ser desfeita.")) {
+            return;
+        }
+        clearMessages();
+        setLoading(true);
+        try {
+            await deleteLoja(lojaId);
+            setSuccess('Loja excluída com sucesso!');
+            await fetchData();
+        } catch (err) {
+            setError('Erro ao excluir loja. Verifique se não há quiosques associados a ela.');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    // --- Funções existentes ---
+    
+    const handleAddQuiosque = async (e) => {
+        e.preventDefault();
+        clearMessages();
+        setLoading(true);
+        try {
+            const quiosqueData = { ...novoQuiosque, capacidade_joias: Number(novoQuiosque.capacidade_joias) };
+            await addQuiosque(quiosqueData);
+            setSuccess('Quiosque adicionado com sucesso!');
+            setNovoQuiosque({ identificador: '', lojaId: '', vendedorResponsavelId: '', capacidade_joias: 50 });
+            await fetchData();
+        } catch (err) {
+            setError('Erro ao adicionar quiosque.');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
     const handleSelectQuiosque = async (quiosqueId) => {
         setSelectedQuiosqueId(quiosqueId);
         if (quiosqueId) {
@@ -75,66 +172,18 @@ const OperationsPage = () => {
         }
     };
 
-    const handleAddLoja = async (e) => {
-        e.preventDefault();
-        if (!nomeLoja) return;
-        setLoading(true);
-        try {
-            const novaLoja = await addLoja(nomeLoja);
-            setLojas(prev => [...prev, novaLoja]);
-            setSuccess('Loja adicionada com sucesso!');
-            setNomeLoja('');
-        } catch (err) {
-            setError('Erro ao adicionar loja.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleAddQuiosque = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const quiosqueData = { ...novoQuiosque, capacidade_joias: Number(novoQuiosque.capacidade_joias) };
-            const quiosqueAdicionado = await addQuiosque(quiosqueData);
-            setQuiosques(prev => [...prev, quiosqueAdicionado]);
-            setSuccess('Quiosque adicionado com sucesso!');
-            e.target.reset();
-        } catch (err) {
-            setError('Erro ao adicionar quiosque.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleAddInventario = async (e) => {
         e.preventDefault();
+        clearMessages();
         if (!itemInventario.joiaId || !selectedQuiosqueId) return;
         setLoading(true);
         try {
             await addOrUpdateInventarioItem(selectedQuiosqueId, itemInventario.joiaId, itemInventario.quantidade);
             setSuccess('Inventário atualizado com sucesso!');
-            // Atualiza a lista de inventário para refletir a adição
             await handleSelectQuiosque(selectedQuiosqueId); 
             setItemInventario({ joiaId: '', quantidade: 1 });
         } catch (err) {
             setError("Erro ao adicionar ao inventário.");
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    // --- NOVA FUNÇÃO PARA ATUALIZAR A ASSOCIAÇÃO DO VENDEDOR ---
-    const handleAssociarVendedor = async (quiosqueId, vendedorId) => {
-        setLoading(true);
-        setSuccess('');
-        setError('');
-        try {
-            await updateQuiosque(quiosqueId, { vendedorResponsavelId: vendedorId });
-            setSuccess("Vendedor associado com sucesso!");
-            fetchData(); // Recarrega os dados para refletir a mudança na lista
-        } catch (err) {
-            setError("Erro ao associar vendedor.");
         } finally {
             setLoading(false);
         }
@@ -144,57 +193,64 @@ const OperationsPage = () => {
         <AdminLayout title="Gerenciamento de Operações">
             {error && <p className="error-message">{error}</p>}
             {success && <p className="success-message">{success}</p>}
+
+            {/* --- MODAL DE EDIÇÃO DE LOJA --- */}
+            {isLojaModalOpen && (
+                <Modal show={isLojaModalOpen} onClose={handleCloseModal} title="Editar Nome da Loja">
+                    <form onSubmit={handleUpdateLoja}>
+                        <input 
+                            type="text" 
+                            value={novoNomeLoja} 
+                            onChange={(e) => setNovoNomeLoja(e.target.value)} 
+                            required 
+                        />
+                        <div className="form-actions">
+                            <button type="button" onClick={handleCloseModal} className="cancel-button" disabled={loading}>Cancelar</button>
+                            <button type="submit" className="save-button" disabled={loading}>
+                                {loading ? 'Salvando...' : 'Salvar Alterações'}
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
+            )}
             
-            <details className="card" open>
-                <summary>Adicionar Novas Lojas e Quiosques</summary>
-                <div className="operations-grid">
-                    <div className="operations-form">
-                        <h3>Adicionar Nova Loja</h3>
-                        <form onSubmit={handleAddLoja}>
-                            <input type="text" placeholder="Nome da Loja (ex: Shopping Morumbi)" value={nomeLoja} onChange={(e) => setNomeLoja(e.target.value)} required />
-                            <button type="submit" disabled={loading}>Adicionar Loja</button>
-                        </form>
-                    </div>
-                    <div className="operations-form">
-                        <h3>Adicionar Novo Quiosque</h3>
-                        <form onSubmit={handleAddQuiosque}>
-                            <input type="text" placeholder="Identificador (ex: QUIOSQUE-SP-01)" onChange={e => setNovoQuiosque({...novoQuiosque, identificador: e.target.value})} required />
-                            <select onChange={e => setNovoQuiosque({...novoQuiosque, lojaId: e.target.value})} required>
-                                <option value="">Selecione a Loja</option>
-                                {lojas.map(loja => <option key={loja.id} value={loja.id}>{loja.nome}</option>)}
-                            </select>
-                            <select onChange={e => setNovoQuiosque({...novoQuiosque, vendedorResponsavelId: e.target.value})}>
-                                <option value="">Associe um Vendedor (Opcional)</option>
-                                {vendedores.map(vendedor => <option key={vendedor.id} value={vendedor.id}>{vendedor.nome}</option>)}
-                            </select>
-                            <input type="number" placeholder="Capacidade de Joias" defaultValue={50} onChange={e => setNovoQuiosque({...novoQuiosque, capacidade_joias: e.target.value})} required />
-                            <button type="submit" disabled={loading}>Adicionar Quiosque</button>
-                        </form>
+            <div className="operations-grid">
+                {/* --- SEÇÃO DE LOJAS --- */}
+                <div className="card">
+                    <h3>Gerenciar Lojas</h3>
+                    <form onSubmit={handleAddLoja} className="inline-form">
+                        <input type="text" placeholder="Nome da Loja (ex: Shopping Morumbi)" value={nomeLoja} onChange={(e) => setNomeLoja(e.target.value)} required />
+                        <button type="submit" disabled={loading}>Adicionar Loja</button>
+                    </form>
+                    <div className="item-list">
+                        {lojas.map(loja => (
+                            <div key={loja.id} className="list-item">
+                                <span>{loja.nome}</span>
+                                <div className="item-actions">
+                                    <button onClick={() => handleOpenEditModal(loja)} className="action-button edit-button" disabled={loading}>Editar</button>
+                                    <button onClick={() => handleDeleteLoja(loja.id)} className="action-button delete-button" disabled={loading}>Excluir</button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
-            </details>
 
-            {/* --- NOVA SEÇÃO PARA GERENCIAR QUIOSQUES EXISTENTES --- */}
-            <div className="card">
-                <h3>Associar Vendedor a Quiosque</h3>
-                <div className="quiosque-list">
-                    {quiosques.map(q => (
-                        <div key={q.id} className="quiosque-list-item">
-                            <span>{q.identificador}</span>
-                            <div className="quiosque-list-actions">
-                                <select
-                                    value={q.vendedorResponsavelId || ''}
-                                    onChange={(e) => handleAssociarVendedor(q.id, e.target.value)}
-                                    disabled={loading}
-                                >
-                                    <option value="">Nenhum Vendedor</option>
-                                    {vendedores.map(v => (
-                                        <option key={v.id} value={v.id}>{v.nome}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    ))}
+                {/* --- SEÇÃO DE QUIOSQUES (EXISTENTE) --- */}
+                <div className="card">
+                    <h3>Adicionar Novo Quiosque</h3>
+                    <form onSubmit={handleAddQuiosque}>
+                        <input type="text" placeholder="Identificador (ex: QUIOSQUE-SP-01)" value={novoQuiosque.identificador} onChange={e => setNovoQuiosque({...novoQuiosque, identificador: e.target.value})} required />
+                        <select value={novoQuiosque.lojaId} onChange={e => setNovoQuiosque({...novoQuiosque, lojaId: e.target.value})} required>
+                            <option value="">Selecione a Loja</option>
+                            {lojas.map(loja => <option key={loja.id} value={loja.id}>{loja.nome}</option>)}
+                        </select>
+                        <select value={novoQuiosque.vendedorResponsavelId} onChange={e => setNovoQuiosque({...novoQuiosque, vendedorResponsavelId: e.target.value})}>
+                            <option value="">Associe um Vendedor (Opcional)</option>
+                            {vendedores.map(vendedor => <option key={vendedor.id} value={vendedor.id}>{vendedor.nome}</option>)}
+                        </select>
+                        <input type="number" placeholder="Capacidade de Joias" value={novoQuiosque.capacidade_joias} onChange={e => setNovoQuiosque({...novoQuiosque, capacidade_joias: e.target.value})} required />
+                        <button type="submit" disabled={loading}>Adicionar Quiosque</button>
+                    </form>
                 </div>
             </div>
 
@@ -218,22 +274,22 @@ const OperationsPage = () => {
                             <input type="number" min="1" placeholder="Qtd." value={itemInventario.quantidade} onChange={e => setItemInventario({...itemInventario, quantidade: e.target.value})} required />
                             <button type="submit" disabled={loading}>{loading ? '...' : 'Adicionar ao Estoque'}</button>
                         </form>
-
                         <div className="inventario-tabela">
                             <h4>Estoque Atual do Quiosque</h4>
                             <table>
                                 <thead>
-                                    <tr><th>Joia</th><th>SKU</th><th>Quantidade em Estoque</th><th>Ações</th></tr>
+                                    <tr><th>Joia</th><th>SKU</th><th>Quantidade em Estoque</th></tr>
                                 </thead>
                                 <tbody>
-                                    {inventario.map(item => (
+                                    {inventario.length > 0 ? inventario.map(item => (
                                         <tr key={item.id}>
                                             <td>{item.joia?.nome || 'Joia não encontrada'}</td>
                                             <td>{item.joia?.sku || '-'}</td>
                                             <td>{item.quantidade}</td>
-                                            <td><button className="action-button delete-button" disabled>Remover</button></td>
                                         </tr>
-                                    ))}
+                                    )) : (
+                                        <tr><td colSpan="3">Nenhum item no inventário.</td></tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
