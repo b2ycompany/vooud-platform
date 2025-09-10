@@ -1,21 +1,14 @@
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, query, where, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
-// --- APRIMORADO: Agora verifica se a loja já existe antes de adicionar ---
+// --- CRUD Lojas ---
 export const addLoja = async (nomeLoja) => {
-    // 1. Normaliza o nome para evitar duplicatas por maiúsculas/minúsculas
     const nomeNormalizado = nomeLoja.trim().toLowerCase();
-    
-    // 2. Faz uma busca para ver se já existe uma loja com esse nome
     const q = query(collection(db, "lojas"), where("nome_normalizado", "==", nomeNormalizado));
     const querySnapshot = await getDocs(q);
-
-    // 3. Se a busca retornar algum resultado, lança um erro
     if (!querySnapshot.empty) {
         throw new Error(`A loja "${nomeLoja}" já está cadastrada.`);
     }
-
-    // 4. Se não houver duplicatas, adiciona a nova loja
     const docRef = await addDoc(collection(db, "lojas"), { 
         nome: nomeLoja.trim(),
         nome_normalizado: nomeNormalizado 
@@ -23,7 +16,6 @@ export const addLoja = async (nomeLoja) => {
     return { id: docRef.id, nome: nomeLoja.trim() };
 };
 
-// --- NOVA FUNÇÃO: Atualiza o nome de uma loja ---
 export const updateLoja = async (lojaId, novoNome) => {
     const nomeNormalizado = novoNome.trim().toLowerCase();
     const lojaRef = doc(db, "lojas", lojaId);
@@ -33,39 +25,67 @@ export const updateLoja = async (lojaId, novoNome) => {
     });
 };
 
-// --- NOVA FUNÇÃO: Exclui uma loja ---
-// CUIDADO: Esta função não verifica se há quiosques associados.
-// Se uma loja for excluída, os quiosques podem ficar "órfãos".
 export const deleteLoja = async (lojaId) => {
     await deleteDoc(doc(db, "lojas", lojaId));
 };
 
-// Busca todas as Lojas
 export const getLojas = async () => {
     const snapshot = await getDocs(collection(db, "lojas"));
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Busca todos os Quiosques
+// --- CRUD Quiosques ---
+
+// APRIMORADO: Agora verifica se o identificador do quiosque já existe
+export const addQuiosque = async (quiosqueData) => {
+    const identificador = quiosqueData.identificador.trim().toUpperCase();
+    const q = query(collection(db, "quiosques"), where("identificador", "==", identificador));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        throw new Error(`O identificador "${identificador}" já está em uso.`);
+    }
+
+    const docRef = await addDoc(collection(db, "quiosques"), {
+        ...quiosqueData,
+        identificador: identificador,
+        capacidade_joias: Number(quiosqueData.capacidade_joias)
+    });
+    return { id: docRef.id, ...quiosqueData, identificador };
+};
+
+// APRIMORADO: Atualiza os dados de um quiosque com normalização
+export const updateQuiosque = async (quiosqueId, dataToUpdate) => {
+    const quiosqueRef = doc(db, "quiosques", quiosqueId);
+    // Garante que os dados enviados para o banco de dados estejam no formato correto
+    const dadosFormatados = {
+        ...dataToUpdate,
+        identificador: dataToUpdate.identificador.trim().toUpperCase(),
+        capacidade_joias: Number(dataToUpdate.capacidade_joias)
+    };
+    await updateDoc(quiosqueRef, dadosFormatados);
+};
+
+// NOVO: Deleta um quiosque
+export const deleteQuiosque = async (quiosqueId) => {
+    // CUIDADO: Esta ação pode deixar registros de inventário órfãos.
+    await deleteDoc(doc(db, "quiosques", quiosqueId));
+};
+
 export const getQuiosques = async () => {
     const snapshot = await getDocs(collection(db, "quiosques"));
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Adiciona um novo Quiosque
-export const addQuiosque = async (quiosqueData) => {
-    const docRef = await addDoc(collection(db, "quiosques"), quiosqueData);
-    return { id: docRef.id, ...quiosqueData };
-};
 
-// Busca todos os Vendedores da coleção 'vendedores'
+// --- Outros Serviços ---
+
 export const getVendedores = async () => {
     const q = query(collection(db, "vendedores"), where("role", "==", "vendedor"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Busca o inventário de um Quiosque específico
 export const getInventarioForQuiosque = async (quiosqueId, joiasList) => {
     if (!quiosqueId) return [];
     const q = query(collection(db, "inventario"), where("quiosqueId", "==", quiosqueId));
@@ -76,7 +96,6 @@ export const getInventarioForQuiosque = async (quiosqueId, joiasList) => {
     });
 };
 
-// Adiciona ou atualiza um item no inventário
 export const addOrUpdateInventarioItem = async (quiosqueId, joiaId, quantidade) => {
     const q = query(collection(db, "inventario"), where("quiosqueId", "==", quiosqueId), where("joiaId", "==", joiaId));
     const snapshot = await getDocs(q);
@@ -95,13 +114,6 @@ export const addOrUpdateInventarioItem = async (quiosqueId, joiaId, quantidade) 
     }
 };
 
-// Atualiza os dados de um quiosque (ex: associar vendedor)
-export const updateQuiosque = async (quiosqueId, dataToUpdate) => {
-    const quiosqueRef = doc(db, "quiosques", quiosqueId);
-    await updateDoc(quiosqueRef, dataToUpdate);
-};
-
-// Busca todas as vendas e enriquece com dados do vendedor e quiosque
 export const getVendasComDetalhes = async () => {
     const vendasSnapshot = await getDocs(collection(db, "vendas"));
     const vendas = vendasSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

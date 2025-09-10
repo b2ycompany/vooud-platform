@@ -1,9 +1,3 @@
-/* --- ESTILOS ORIGINAIS E DA SEÇÃO DE INVENTÁRIO --- */
-.operations-container {
-    padding: 20px;
-    color: #333;
-}
-
 .operations-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -11,88 +5,23 @@
     margin-bottom: 30px;
 }
 
-.operations-form h3 {
-    margin-top: 0;
-}
-
-form input, form select {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 10px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-}
-
-form button {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    background-color: #333;
-    color: white;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-form button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
 .card {
     background-color: white;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    border: 1px solid #eee;
+    margin-bottom: 20px; /* Adicionado para espaçamento entre a grid e o card de inventário */
 }
 
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-.form-group select {
-    width: 100%;
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-}
-
-.inventario-form {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+.card h3 {
+    margin-top: 0;
     border-bottom: 1px solid #eee;
-    padding-bottom: 20px;
+    padding-bottom: 10px;
     margin-bottom: 20px;
 }
 
-.inventario-form select {
-    flex-grow: 1;
-}
-
-.inventario-form input {
-    width: 100px;
-}
-
-.inventario-tabela table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.inventario-tabela th, .inventario-tabela td {
-    padding: 12px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
-}
-
-/* --- NOVOS ESTILOS PARA FORMULÁRIOS E LISTAS DE GERENCIAMENTO --- */
+/* --- Formulários --- */
 .inline-form {
     display: flex;
     gap: 10px;
@@ -102,13 +31,41 @@ form button:disabled {
 
 .inline-form input {
     flex-grow: 1;
-    margin-bottom: 0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
+.stacked-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stacked-form input,
+.stacked-form select,
+.modal form input,
+.modal form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.stacked-form button,
 .inline-form button {
-    width: auto;
+    padding: 12px;
+    border: none;
+    background-color: #333;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
 }
 
+/* --- Listas de Itens --- */
 .item-list {
     margin-top: 20px;
     display: flex;
@@ -126,6 +83,11 @@ form button:disabled {
     background-color: #f9f9f9;
 }
 
+.list-item span small {
+    color: #6c757d;
+    margin-left: 5px;
+}
+
 .item-actions {
     display: flex;
     gap: 10px;
@@ -138,57 +100,71 @@ form button:disabled {
     cursor: pointer;
     color: white;
     font-size: 0.9em;
+    transition: background-color 0.2s;
 }
 
-.edit-button {
-    background-color: #007bff;
-}
+.edit-button { background-color: #007bff; }
+.edit-button:hover { background-color: #0056b3; }
+.delete-button { background-color: #dc3545; }
+.delete-button:hover { background-color: #c82333; }
 
-.edit-button:hover {
-    background-color: #0056b3;
-}
-
-.delete-button {
-    background-color: #dc3545;
-}
-
-.delete-button:hover {
-    background-color: #c82333;
-}
-
-/* Estilos para botões de ação dentro do modal */
+/* --- Ações do Modal --- */
 .form-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     margin-top: 20px;
 }
+
 .form-actions button {
-    width: auto;
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: none;
+    color: white;
+    cursor: pointer;
 }
 
-.cancel-button {
-    background-color: #6c757d;
+.cancel-button { background-color: #6c757d; }
+.save-button { background-color: #28a745; }
+
+/* --- Seção de Inventário --- */
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.inventario-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+.inventario-tabela table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.inventario-tabela th, .inventario-tabela td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
 }
 
-.save-button {
-    background-color: #28a745;
+/* --- Mensagens de Feedback --- */
+.error-message, .success-message {
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
 }
-
 .error-message {
     background-color: #f8d7da;
     color: #721c24;
-    padding: 10px;
-    border: 1px solid #f5c6cb;
-    border-radius: 4px;
-    margin-bottom: 20px;
+    border-color: #f5c6cb;
 }
-
 .success-message {
     background-color: #d4edda;
     color: #155724;
-    padding: 10px;
-    border: 1px solid #c3e6cb;
-    border-radius: 4px;
-    margin-bottom: 20px;
+    border-color: #c3e6cb;
 }
