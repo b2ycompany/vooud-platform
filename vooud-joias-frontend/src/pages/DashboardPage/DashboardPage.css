@@ -1,237 +1,177 @@
-/* === Layout Principal do Dashboard === */
-.dashboard-container {
+/* === ESTRUTURA PRINCIPAL DO PDV === */
+.dashboard-pdv {
+    padding: 20px;
+    background-color: #f4f7f6;
+    font-family: Arial, sans-serif;
+    height: calc(100vh - 40px); /* Ocupa a altura da tela, descontando o padding */
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    background-color: #f4f7f6;
 }
 
-.dashboard-header {
-    background-color: #333;
-    color: white;
-    padding: 15px 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.dashboard-header h1 {
-    margin: 0;
-    font-size: 1.5em;
-}
-
-.header-user-info {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.logout-button {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s;
-}
-
-.logout-button:hover {
-    background-color: #c82333;
-}
-
-/* === Menu de Navegação do Administrador === */
-.admin-dashboard-nav {
-    background-color: #ffffff;
+/* === MENSAGENS DE FEEDBACK (ERRO E SUCESSO) === */
+.error-message, .success-message {
     padding: 15px;
-    margin: 20px;
+    margin-bottom: 20px;
     border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    border: 1px solid #ddd;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.admin-dashboard-link {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    text-decoration: none;
+    text-align: center;
     font-weight: bold;
-    transition: background-color 0.3s, transform 0.2s;
+    font-size: 1.1em;
 }
 
-.admin-dashboard-link:hover {
-    background-color: #0056b3;
-    transform: translateY(-2px);
+.error-message {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
 }
 
-/* === Grid Principal do Ponto de Venda (PDV) === */
+.success-message {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+/* === GRID LAYOUT (PRODUTOS | CARRINHO) === */
 .pdv-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 2fr 1fr; /* Coluna de produtos é 2x maior que a do carrinho */
     gap: 20px;
+    flex-grow: 1; /* Faz o grid ocupar o espaço restante */
+    overflow: hidden; /* Evita que o conteúdo interno cause scroll na página inteira */
+}
+
+/* === COLUNA DA ESQUERDA (PRODUTOS DISPONÍVEIS) === */
+.produtos-disponiveis {
+    background-color: #ffffff;
     padding: 20px;
-    flex-grow: 1;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
 
-/* === Seção do Inventário (Esquerda) === */
-.pdv-inventario {
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
+.produtos-disponiveis h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
 }
 
-.inventario-grid-visual {
+.lista-produtos {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 15px;
-    margin-top: 15px;
+    overflow-y: auto; /* Adiciona scroll apenas na lista de produtos */
+    padding-right: 10px; /* Espaço para a barra de rolagem */
 }
 
-.joia-card {
+.produto-card {
     border: 1px solid #eee;
     border-radius: 8px;
-    padding: 10px;
+    padding: 15px;
     text-align: center;
     cursor: pointer;
-    transition: box-shadow 0.3s, transform 0.3s;
+    transition: box-shadow 0.3s, transform 0.2s;
+    background-color: #fff;
 }
 
-.joia-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.produto-card:hover {
     transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.joia-card-img {
-    width: 100%;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 4px;
-    margin-bottom: 10px;
+.produto-card h4 {
+    margin: 0 0 5px 0;
+    font-size: 1em;
 }
 
-.joia-card-info p {
-    margin: 4px 0;
+.produto-card p {
+    margin: 5px 0;
+    color: #555;
 }
 
-.joia-card-nome {
-    font-weight: bold;
-    font-size: 0.9em;
-}
-
-.joia-card-preco {
-    color: #007bff;
-    font-weight: bold;
-}
-
-.joia-card-estoque {
-    font-size: 0.8em;
-    color: #6c757d;
-}
-
-/* === Seção da Venda (Direita) === */
-.pdv-venda.card {
-    display: flex;
-    flex-direction: column;
+/* === COLUNA DA DIREITA (CARRINHO DE COMPRAS) === */
+.carrinho-pdv {
+    background-color: #ffffff;
     padding: 20px;
-    border: 1px solid #ddd;
     border-radius: 8px;
-    background-color: white;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column; /* Organiza os itens do carrinho verticalmente */
 }
 
-.pdv-venda h3 {
+.carrinho-pdv h3 {
     margin-top: 0;
     text-align: center;
 }
 
-.carrinho-secao {
-    flex-grow: 1;
-    overflow-y: auto;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-}
-
-.carrinho-item, .carrinho-total {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-}
-
-.carrinho-total {
-    font-size: 1.2em;
-    font-weight: bold;
-    border-top: 2px solid #333;
-    margin-top: 10px;
-}
-
-.cliente-secao, .pagamento-secao {
+.lista-carrinho {
+    flex-grow: 1; /* Faz a lista de itens ocupar o espaço disponível */
+    overflow-y: auto; /* Adiciona scroll se a lista for grande */
     margin-bottom: 15px;
 }
 
-.cliente-secao h4, .pagamento-secao h4 {
-    margin-bottom: 10px;
+.carrinho-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 5px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
-.pdv-venda input, .pdv-venda select {
-    width: 100%;
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    margin-bottom: 10px;
-    box-sizing: border-box; /* Garante que padding não afete a largura */
-}
-
-.finalizar-venda-button {
-    width: 100%;
-    padding: 15px;
-    font-size: 1.1em;
-    font-weight: bold;
-    background-color: #28a745;
+.remove-btn {
+    background-color: #ff4d4d;
     color: white;
     border: none;
+    padding: 5px 10px;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s;
 }
 
-.finalizar-venda-button:hover {
+.remove-btn:hover {
+    background-color: #e60000;
+}
+
+/* === TOTAL E BOTÃO DE FINALIZAR VENDA === */
+.carrinho-total {
+    border-top: 2px solid #333;
+    padding-top: 15px;
+    margin-top: auto; /* Empurra o total para o final do container flex */
+    font-size: 1.3em;
+    font-weight: bold;
+}
+
+.finalizar-venda-btn {
+    width: 100%;
+    padding: 15px;
+    margin-top: 15px;
+    font-size: 1.2em;
+    font-weight: bold;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.finalizar-venda-btn:hover {
     background-color: #218838;
 }
 
-.finalizar-venda-button:disabled {
+.finalizar-venda-btn:disabled {
     background-color: #aaa;
     cursor: not-allowed;
 }
 
-/* === Tela de Boas-Vindas / Placeholder === */
-.dashboard-placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-grow: 1;
-    text-align: center;
-    font-size: 1.2em;
-    color: #555;
-    padding: 20px;
-}
 
-/* === Mensagens de Erro/Sucesso === */
-.success-message {
-    color: #28a745;
-    text-align: center;
-    font-weight: bold;
-}
-.error-message {
-    color: #dc3545;
-    text-align: center;
-    font-weight: bold;
+/* === RESPONSIVIDADE PARA TELAS MENORES (EX: CELULARES) === */
+@media (max-width: 768px) {
+    .pdv-grid {
+        grid-template-columns: 1fr; /* Colunas empilhadas */
+    }
+
+    .dashboard-pdv {
+        height: auto; /* Altura automática em telas menores */
+    }
 }
