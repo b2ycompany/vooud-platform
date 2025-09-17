@@ -11,9 +11,15 @@ export const addCategoria = async (nomeCategoria) => {
     return { id: docRef.id, nome: nomeCategoria };
 };
 
-export const getJoias = async (categoriasList) => {
+// ==================================================================
+// CORREÇÃO AQUI: Adicionado ` = []` para definir um valor padrão.
+// Isso evita o erro caso a função seja chamada sem passar a lista de categorias.
+export const getJoias = async (categoriasList = []) => {
+// ==================================================================
     const joiasSnapshot = await getDocs(collection(db, "joias"));
     return joiasSnapshot.docs.map(doc => {
+        // Agora, se 'categoriasList' for uma lista vazia, o .find() apenas não encontrará nada,
+        // sem quebrar a aplicação.
         const categoria = categoriasList.find(c => c.id === doc.data().categoriaId);
         return { id: doc.id, ...doc.data(), nomeCategoria: categoria ? categoria.nome : 'N/A' };
     });
