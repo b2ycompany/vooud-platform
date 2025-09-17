@@ -24,14 +24,19 @@ const RegisterPage = () => {
         }
         
         setLoading(true);
-        const result = await registerUser(email, password, nome);
-        setLoading(false);
-        
-        if (result.success) {
-            alert('Cadastro realizado com sucesso! Você será redirecionado para a página de login.');
-            navigate('/'); // Redireciona para a página de login
-        } else {
-            setError(result.error);
+        try {
+            const result = await registerUser(email, password, nome);
+            if (result.success) {
+                alert('Cadastro realizado com sucesso! Você será redirecionado para a página de login.');
+                navigate('/');
+            } else {
+                setError(result.error);
+            }
+        } catch (err) {
+            setError('Ocorreu um erro inesperado durante o cadastro.');
+            console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
 

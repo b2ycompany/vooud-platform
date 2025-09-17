@@ -35,8 +35,6 @@ export const getLojas = async () => {
 };
 
 // --- CRUD Quiosques ---
-
-// APRIMORADO: Agora verifica se o identificador do quiosque já existe
 export const addQuiosque = async (quiosqueData) => {
     const identificador = quiosqueData.identificador.trim().toUpperCase();
     const q = query(collection(db, "quiosques"), where("identificador", "==", identificador));
@@ -54,10 +52,8 @@ export const addQuiosque = async (quiosqueData) => {
     return { id: docRef.id, ...quiosqueData, identificador };
 };
 
-// APRIMORADO: Atualiza os dados de um quiosque com normalização
 export const updateQuiosque = async (quiosqueId, dataToUpdate) => {
     const quiosqueRef = doc(db, "quiosques", quiosqueId);
-    // Garante que os dados enviados para o banco de dados estejam no formato correto
     const dadosFormatados = {
         ...dataToUpdate,
         identificador: dataToUpdate.identificador.trim().toUpperCase(),
@@ -66,9 +62,7 @@ export const updateQuiosque = async (quiosqueId, dataToUpdate) => {
     await updateDoc(quiosqueRef, dadosFormatados);
 };
 
-// NOVO: Deleta um quiosque
 export const deleteQuiosque = async (quiosqueId) => {
-    // CUIDADO: Esta ação pode deixar registros de inventário órfãos.
     await deleteDoc(doc(db, "quiosques", quiosqueId));
 };
 
@@ -79,7 +73,6 @@ export const getQuiosques = async () => {
 
 
 // --- Outros Serviços ---
-
 export const getVendedores = async () => {
     const q = query(collection(db, "vendedores"), where("role", "==", "vendedor"));
     const snapshot = await getDocs(q);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { collection, doc, runTransaction, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, runTransaction, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { getInventarioForQuiosque } from '../../services/operationsService'; // Importa a função correta
 import { getJoias } from '../../services/catalogService';
 import { useAuth } from '../../context/AuthContext';
 import AdminLayout from '../../components/AdminLayout/AdminLayout';
@@ -9,53 +10,67 @@ import './DashboardPage.css';
 const DashboardPage = () => {
     const { user } = useAuth();
     
+    // TODO: A lógica para obter o quiosque deve ser implementada em produção
+    const quiosqueId = "ID_DO_QUIOSQUE_ATUAL"; 
     const vendedorId = user ? user.uid : null; 
-    const quiosqueId = "ID_DO_QUIOSQUE_ATUAL"; // TODO: Implementar lógica para buscar o quiosque associado ao vendedor
 
-    const [joiasDisponiveis, setJoiasDisponiveis] = useState([]);
+    const [inventarioDisponivel, setInventarioDisponivel] = useState([]);
     const [carrinho, setCarrinho] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
     useEffect(() => {
-        const carregarJoias = async () => {
+        const carregarInventario = async () => {
+            if (!vendedorId || !quiosqueId) {
+                setError("Vendedor ou quiosque não identificado. Não é possível carregar o inventário.");
+                return;
+            }
             try {
+                // Busque as joias primeiro, que são os detalhes dos produtos
                 const joias = await getJoias();
-                setJoiasDisponiveis(joias);
+                // Em seguida, busque o inventário do quiosque específico
+                const inventario = await getInventarioForQuiosque(quiosqueId, joias);
+                setInventarioDisponivel(inventario);
             } catch (err) {
-                console.error("Erro detalhado ao carregar produtos:", err);
+                console.error("Erro detalhado ao carregar inventário:", err);
                 setError("Falha ao carregar os produtos. Verifique sua conexão ou permissões.");
             }
         };
 
-        if (vendedorId) {
-            carregarJoias();
-        }
-    }, [vendedorId]);
+        carregarInventario();
+    }, [vendedorId, quiosqueId]);
 
     const clearMessages = () => {
         setError('');
         setSuccess('');
     };
 
-    const handleAddItemAoCarrinho = (joia, quantidade = 1) => {
+    const handleAddItemAoCarrinho = (itemInventario, quantidade = 1) => {
         clearMessages();
         setCarrinho(prevCarrinho => {
-            const itemExistente = prevCarrinho.find(item => item.id === joia.id);
+            const itemExistente = prevCarrinho.find(item => item.inventarioId === itemInventario.id);
             if (itemExistente) {
+                if (itemExistente.quantidade + quantidade > itemInventario.quantidade) {
+                    setError(`Estoque insuficiente para "${itemExistente.joia.nome}". Disponível: ${itemInventario.quantidade}`);
+                    return prevCarrinho;
+                }
                 return prevCarrinho.map(item =>
-                    item.id === joia.id ? { ...item, quantidade: item.quantidade + quantidade } : item
+                    item.inventarioId === itemInventario.id ? { ...item, quantidade: item.quantidade + quantidade } : item
                 );
             } else {
-                return [...prevCarrinho, { ...joia, quantidade }];
+                if (quantidade > itemInventario.quantidade) {
+                    setError(`Estoque insuficiente para "${itemInventario.joia.nome}". Disponível: ${itemInventario.quantidade}`);
+                    return prevCarrinho;
+                }
+                return [...prevCarrinho, { ...itemInventario.joia, inventarioId: itemInventario.id, quantidade, preco_venda: itemInventario.joia.preco_venda }];
             }
         });
     };
 
-    const handleRemoverItemDoCarrinho = (joiaId) => {
+    const handleRemoverItemDoCarrinho = (inventarioId) => {
         clearMessages();
-        setCarrinho(prevCarrinho => prevCarrinho.filter(item => item.id !== joiaId));
+        setCarrinho(prevCarrinho => prevCarrinho.filter(item => item.inventarioId !== inventarioId));
     };
 
     const calcularTotal = () => {
@@ -76,17 +91,11 @@ const DashboardPage = () => {
 
         try {
             await runTransaction(db, async (transaction) => {
-                // ==================================================================
-                // LÓGICA DA TRANSAÇÃO QUE FOI REMOVIDA, AGORA RESTAURADA
-                // ==================================================================
-                const inventarioRefs = carrinho.map(item => doc(db, "inventario", item.inventarioId)); // Assumindo que a joia tem um inventarioId
-
-                // FASE 1: LEITURAS
+                const inventarioRefs = carrinho.map(item => doc(db, "inventario", item.inventarioId));
                 const inventarioDocs = await Promise.all(
                     inventarioRefs.map(ref => transaction.get(ref))
                 );
 
-                // FASE 2: VALIDAÇÃO
                 for (let i = 0; i < carrinho.length; i++) {
                     const itemCarrinho = carrinho[i];
                     const inventarioDoc = inventarioDocs[i];
@@ -101,8 +110,6 @@ const DashboardPage = () => {
                     }
                 }
 
-                // FASE 3: ESCRITAS
-                // 3.1: Atualizar o estoque
                 for (let i = 0; i < carrinho.length; i++) {
                     const itemCarrinho = carrinho[i];
                     const inventarioDoc = inventarioDocs[i];
@@ -111,22 +118,24 @@ const DashboardPage = () => {
                     transaction.update(inventarioRefs[i], { quantidade: novoEstoque });
                 }
 
-                // 3.2: Criar o registro da venda
                 const vendaRef = doc(collection(db, "vendas"));
                 transaction.set(vendaRef, {
                     vendedorId: vendedorId,
                     quiosqueId: quiosqueId,
-                    itens: carrinho,
+                    itens: carrinho.map(item => ({ 
+                        joiaId: item.id, 
+                        nome: item.nome, 
+                        sku: item.sku,
+                        quantidade: item.quantidade,
+                        preco_venda: item.preco_venda
+                    })),
                     total: parseFloat(calcularTotal()),
                     data: serverTimestamp()
                 });
-                // ==================================================================
-                // FIM DA LÓGICA RESTAURADA
-                // ==================================================================
             });
 
             setSuccess("Venda realizada com sucesso!");
-            setCarrinho([]); // Limpa o carrinho após a venda
+            setCarrinho([]);
         } catch (err) {
             console.error("Erro na transação:", err);
             setError(err.message || "Ocorreu um erro ao finalizar a venda.");
@@ -142,13 +151,14 @@ const DashboardPage = () => {
                 {success && <p className="success-message">{success}</p>}
                 <div className="pdv-grid">
                     <div className="produtos-disponiveis">
-                        <h3>Produtos</h3>
+                        <h3>Produtos em Estoque</h3>
                         <div className="lista-produtos">
-                            {joiasDisponiveis.map(joia => (
-                                <div key={joia.id} className="produto-card" onClick={() => handleAddItemAoCarrinho(joia)}>
-                                    <h4>{joia.nome}</h4>
-                                    <p>R$ {joia.preco_venda ? joia.preco_venda.toFixed(2) : '0.00'}</p>
-                                    <p>SKU: {joia.sku}</p>
+                            {inventarioDisponivel.map(item => (
+                                <div key={item.id} className="produto-card" onClick={() => handleAddItemAoCarrinho(item)}>
+                                    <h4>{item.joia?.nome}</h4>
+                                    <p>Estoque: {item.quantidade}</p>
+                                    <p>R$ {item.joia?.preco_venda ? item.joia.preco_venda.toFixed(2) : '0.00'}</p>
+                                    <p>SKU: {item.joia?.sku}</p>
                                 </div>
                             ))}
                         </div>
@@ -160,10 +170,10 @@ const DashboardPage = () => {
                                 <p>Nenhum item adicionado.</p>
                             ) : (
                                 carrinho.map(item => (
-                                    <div key={item.id} className="carrinho-item">
+                                    <div key={item.inventarioId} className="carrinho-item">
                                         <span>{item.nome} (x{item.quantidade})</span>
                                         <span>R$ {((item.preco_venda || 0) * item.quantidade).toFixed(2)}</span>
-                                        <button onClick={() => handleRemoverItemDoCarrinho(item.id)} className="remove-btn">Remover</button>
+                                        <button onClick={() => handleRemoverItemDoCarrinho(item.inventarioId)} className="remove-btn">Remover</button>
                                     </div>
                                 ))
                             )}
