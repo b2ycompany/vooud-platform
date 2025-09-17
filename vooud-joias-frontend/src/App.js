@@ -1,62 +1,76 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext'; // Ajuste o caminho se necessário
+import { AuthProvider, useAuth } from './context/AuthContext';
 
-// Importação das suas páginas
+// Importação das páginas
 import LoginPage from './pages/LoginPage/LoginPage';
+import RegisterPage from './pages/RegisterPage/RegisterPage'; // Rota de cadastro
 import DashboardPage from './pages/DashboardPage/DashboardPage';
 import CatalogPage from './pages/CatalogPage/CatalogPage';
 import OperationsPage from './pages/OperationsPage/OperationsPage';
-import ReportsPage from './pages/ReportsPage/ReportsPage'; // A nova página de relatórios
+import ReportsPage from './pages/ReportsPage/ReportsPage';
+import SplashScreen from './components/SplashScreen/SplashScreen'; // Um componente de loading é útil
 
 /**
  * Componente para proteger rotas.
- * Se o usuário não estiver logado, ele é redirecionado para a página de login.
+ * Redireciona para /login se o usuário não estiver autenticado.
  */
 const PrivateRoute = ({ children }) => {
-    const { user, loading } = useAuth(); // Usando o hook do seu contexto de autenticação
-
-    if (loading) {
-        // Mostra uma mensagem de "carregando" enquanto verifica a autenticação
-        return <div>Verificando autenticação...</div>;
-    }
-
-    // Se não houver usuário, redireciona para o login
-    return user ? children : <Navigate to="/login" />;
-};
-
-/**
- * Componente para proteger a rota de login.
- * Se o usuário já estiver logado, ele é redirecionado para o dashboard.
- */
-const LoginRoute = ({ children }) => {
     const { user, loading } = useAuth();
 
     if (loading) {
-        return <div>Verificando autenticação...</div>;
+        return <SplashScreen />; // Mostra uma tela de carregamento enquanto verifica o auth
     }
 
-    return !user ? children : <Navigate to="/dashboard" />;
+    return user ? children : <Navigate to="/" />; // Alterado para a rota raiz/login
 };
 
+/**
+ * Componente para redirecionar usuários já logados.
+ * Evita que um usuário logado acesse as páginas de login/cadastro.
+ */
+const PublicRoute = ({ children }) => {
+    const { user, loading } = useAuth();
+
+    if (loading) {
+        return <SplashScreen />;
+    }
+
+    // Redireciona para a página apropriada com base na role se o usuário já estiver logado
+    if (user) {
+        if (user.role === 'admin') {
+            return <Navigate to="/catalogo" />;
+        }
+        return <Navigate to="/dashboard" />;
+    }
+
+    return children;
+};
 
 function App() {
   return (
-    // O AuthProvider envolve toda a aplicação para que o contexto seja acessível
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Rota pública para Login */}
+          {/* Rotas Públicas: Login e Cadastro */}
           <Route 
-            path="/login" 
+            path="/" 
             element={
-              <LoginRoute>
+              <PublicRoute>
                 <LoginPage />
-              </LoginRoute>
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/cadastro" 
+            element={
+              <PublicRoute>
+                <RegisterPage />
+              </PublicRoute>
             } 
           />
 
-          {/* Rotas protegidas que exigem autenticação */}
+          {/* Rotas Protegidas (exigem autenticação) */}
           <Route 
             path="/dashboard" 
             element={
@@ -90,10 +104,10 @@ function App() {
             } 
           />
 
-          {/* Rota padrão: redireciona para o dashboard se logado, ou para o login se não */}
+          {/* Rota Padrão: redireciona para a rota raiz */}
           <Route 
             path="*" 
-            element={<Navigate to="/dashboard" />} 
+            element={<Navigate to="/" />} 
           />
         </Routes>
       </BrowserRouter>

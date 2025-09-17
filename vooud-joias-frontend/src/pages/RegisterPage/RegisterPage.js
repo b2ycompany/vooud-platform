@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-// --- CORREÇÃO 1: Importando o hook 'useAuth' ---
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/Auth.css';
 
 const RegisterPage = () => {
-    // --- CORREÇÃO 2: Usando o hook 'useAuth' diretamente ---
     const { registerUser } = useAuth();
     const navigate = useNavigate();
     const [error, setError] = useState(null);
@@ -30,10 +28,10 @@ const RegisterPage = () => {
         setLoading(false);
         
         if (result.success) {
-            alert('Cadastro realizado com sucesso! Você será redirecionado para o login.');
-            navigate('/'); // Redireciona para o login após o sucesso
+            alert('Cadastro realizado com sucesso! Você será redirecionado para a página de login.');
+            navigate('/'); // Redireciona para a página de login
         } else {
-            setError(result.error); // Mostra o erro do Firebase
+            setError(result.error);
         }
     };
 
@@ -41,7 +39,7 @@ const RegisterPage = () => {
         <div className="auth-container">
             <form className="auth-form" onSubmit={handleSubmit}>
                 <h2 className="auth-title">Criar Conta</h2>
-                {error && <p style={{ color: 'tomato', textAlign: 'center' }}>{error}</p>}
+                {error && <p className="error-message">{error}</p>}
                 <div className="input-group">
                     <input type="text" name="nomeCompleto" className="input-field" placeholder="Nome Completo" required />
                 </div>

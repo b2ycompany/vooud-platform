@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-// --- CORREÇÃO 1: Importando o hook 'useAuth' ---
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/Auth.css';
 
 const LoginPage = () => {
-    // --- CORREÇÃO 2: Usando o hook 'useAuth' diretamente ---
-    const { loginUser, user } = useAuth();
+    const { loginUser, user } = useAuth(); // 'user' não é mais necessário para o redirecionamento aqui, mas pode ser útil
     const navigate = useNavigate();
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -15,27 +13,25 @@ const LoginPage = () => {
         event.preventDefault();
         setError(null);
         setLoading(true);
+
         const email = event.target.email.value;
         const password = event.target.password.value;
         const result = await loginUser(email, password);
+        
         setLoading(false);
+        
         if (result.error) {
             setError(result.error);
         }
+        // O redirecionamento agora é tratado pelo componente PublicRoute e pelo AuthContext.
+        // Isso evita que a página pisque ou tente redirecionar antes do estado 'user' ser atualizado.
     };
-    
-    // Efeito para redirecionar se o usuário já estiver logado
-    useEffect(() => {
-        if (user) {
-            navigate('/dashboard');
-        }
-    }, [user, navigate]);
 
     return (
         <div className="auth-container">
             <form className="auth-form" onSubmit={handleSubmit}>
                 <h2 className="auth-title">VOOUD</h2>
-                {error && <p style={{ color: 'tomato', textAlign: 'center' }}>{error}</p>}
+                {error && <p className="error-message">{error}</p>}
                 <div className="input-group">
                     <input type="email" name="email" className="input-field" placeholder="Email" required />
                 </div>
