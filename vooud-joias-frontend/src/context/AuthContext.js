@@ -12,36 +12,56 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [authLoading, setAuthLoading] = useState(true); // Controla o carregamento do Firebase
+    const [splashTimer, setSplashTimer] = useState(true); // Controla o seu timer
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                // Tenta buscar como administrador primeiro
-                const adminDocRef = doc(db, "administradores", firebaseUser.uid);
-                const adminDocSnap = await getDoc(adminDocRef);
+                try {
+                    // Tenta buscar como administrador primeiro
+                    const adminDocRef = doc(db, "administradores", firebaseUser.uid);
+                    const adminDocSnap = await getDoc(adminDocRef);
 
-                if (adminDocSnap.exists()) {
-                    setUser({ uid: firebaseUser.uid, email: firebaseUser.email, ...adminDocSnap.data() });
-                } else {
-                    // Se não for admin, busca como vendedor
-                    const userDocRef = doc(db, "vendedores", firebaseUser.uid);
-                    const userDocSnap = await getDoc(userDocRef);
-
-                    if (userDocSnap.exists()) {
-                        setUser({ uid: firebaseUser.uid, email: firebaseUser.email, ...userDocSnap.data() });
+                    if (adminDocSnap.exists()) {
+                        const adminProfile = { uid: firebaseUser.uid, email: firebaseUser.email, ...adminDocSnap.data() };
+                        
+                        // LOG DE DIAGNÓSTICO ADICIONADO
+                        console.log("Perfil de Administrador encontrado. Definindo usuário como:", adminProfile);
+                        
+                        setUser(adminProfile);
                     } else {
-                        console.warn("Usuário autenticado, mas sem perfil no Firestore:", firebaseUser.uid);
-                        setUser(firebaseUser); // Usuário existe no Auth, mas não no DB
+                        // Se não for admin, busca como vendedor
+                        const userDocRef = doc(db, "vendedores", firebaseUser.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+                        if (userDocSnap.exists()) {
+                            const vendedorProfile = { uid: firebaseUser.uid, email: firebaseUser.email, ...userDocSnap.data() };
+                            console.log("Perfil de Vendedor encontrado. Definindo usuário como:", vendedorProfile);
+                            setUser(vendedorProfile);
+                        } else {
+                            throw new Error("Perfil de usuário não encontrado no Firestore.");
+                        }
                     }
+                } catch (error) {
+                    console.error("Erro ao buscar perfil do usuário, deslogando:", error);
+                    await signOut(auth);
+                    setUser(null);
                 }
             } else {
                 setUser(null);
             }
-            setLoading(false);
+            setAuthLoading(false); // Finaliza o carregamento do Firebase
         });
 
-        return () => unsubscribe();
+        // Seu timer de 5 segundos restaurado
+        const timer = setTimeout(() => {
+            setSplashTimer(false);
+        }, 5000); // 5000 milissegundos
+
+        return () => {
+            unsubscribe();
+            clearTimeout(timer);
+        };
     }, []);
 
     const registerUser = async (email, password, nome, enderecoLoja) => {
@@ -54,15 +74,18 @@ export const AuthProvider = ({ children }) => {
                 enderecoLoja: enderecoLoja,
                 quiosqueId: null,
                 role: 'vendedor',
-                associado: false, // Começa como não associado
+                associado: false,
                 data_criacao: serverTimestamp()
             });
             return { success: true };
         } catch (error) {
             if (userCredential) await deleteUser(userCredential.user); // Rollback
             let friendlyMessage = "Ocorreu um erro ao criar a conta.";
-            if (error.code === 'auth/email-already-in-use') friendlyMessage = "Este e-mail já está em uso.";
-            if (error.code === 'auth/weak-password') friendlyMessage = "A senha é muito fraca.";
+            if (error.code === 'auth/email-already-in-use') {
+                friendlyMessage = "Este e-mail já está em uso.";
+            } else if (error.code === 'auth/weak-password') {
+                friendlyMessage = "A senha é muito fraca.";
+            }
             console.error("Erro no registro:", error);
             return { success: false, error: friendlyMessage };
         }
@@ -73,9 +96,8 @@ export const AuthProvider = ({ children }) => {
             await signInWithEmailAndPassword(auth, email, password);
             return { success: true };
         } catch (error) {
-            let friendlyMessage = "E-mail ou senha inválidos.";
             console.error("Erro no login:", error.code);
-            return { success: false, error: friendlyMessage };
+            return { success: false, error: "E-mail ou senha inválidos." };
         }
     };
 
@@ -85,14 +107,14 @@ export const AuthProvider = ({ children }) => {
 
     const contextData = {
         user,
-        loading,
+        // O loading geral agora depende tanto do auth quanto do seu timer
+        loading: authLoading || splashTimer,
         registerUser,
         loginUser,
         logoutUser,
     };
 
-    // O SplashScreen é mostrado apenas durante o carregamento inicial
-    if (loading) {
+    if (authLoading || splashTimer) {
         return <SplashScreen />;
     }
 
