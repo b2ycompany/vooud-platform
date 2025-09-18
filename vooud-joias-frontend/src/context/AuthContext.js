@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, deleteUser } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from '../firebase';
 import SplashScreen from '../components/SplashScreen/SplashScreen';
 
@@ -17,8 +17,6 @@ export const AuthProvider = ({ children }) => {
 
     const fetchAndSetUser = async (firebaseUser) => {
         if (firebaseUser) {
-            // --- CORREÇÃO CRÍTICA: Apontando para a coleção "vendedores" ---
-            // Seu banco de dados usa a coleção "vendedores", então o código deve buscar aqui.
             const userDocRef = doc(db, "vendedores", firebaseUser.uid);
             const userDocSnap = await getDoc(userDocRef);
 
@@ -47,22 +45,26 @@ export const AuthProvider = ({ children }) => {
             clearTimeout(timer);
         };
     }, []);
-
-    const registerUser = async (email, password, nome) => {
+    
+    // CORREÇÃO: Adicionando o parâmetro 'enderecoLoja'
+    const registerUser = async (email, password, nome, enderecoLoja) => {
         let userCredential;
         try {
             userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const newUser = userCredential.user;
             
-            // --- CORREÇÃO: Garantindo que o registro também ocorra em "vendedores" ---
             await setDoc(doc(db, "vendedores", newUser.uid), {
                 uid: newUser.uid,
                 nome: nome,
                 email: email,
                 role: 'vendedor',
+                // CORREÇÃO: Salvando o endereço da loja e inicializando o quiosqueId como nulo
+                enderecoLoja: enderecoLoja,
+                quiosqueId: null, 
+                associado: false // Indicador para o administrador
             });
 
-            await fetchAndSetUser(newUser);
+            // Não fazemos login automático, o vendedor precisa ser ativado pelo admin
             return { success: true };
         } catch (error) {
             let friendlyMessage = "Ocorreu um erro ao registrar.";
@@ -82,6 +84,14 @@ export const AuthProvider = ({ children }) => {
     const loginUser = async (email, password) => {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const userDocRef = doc(db, "vendedores", userCredential.user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            
+            if (userDocSnap.exists() && userDocSnap.data().associado === false && userDocSnap.data().role !== 'administrador') {
+                 // Bloqueia o login se não for admin e não estiver associado
+                return { success: false, error: "Sua conta ainda não foi associada a um quiosque. Por favor, aguarde a aprovação do administrador." };
+            }
+
             await fetchAndSetUser(userCredential.user);
             return { success: true };
         } catch (error) {

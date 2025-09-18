@@ -17,17 +17,19 @@ const RegisterPage = () => {
         const email = event.target.email.value;
         const password = event.target.password.value;
         const confirmPassword = event.target.confirmPassword.value;
+        const enderecoLoja = event.target.enderecoLoja.value;
 
         if (password !== confirmPassword) {
             setError('As senhas não coincidem.');
             return;
         }
-        
+
         setLoading(true);
         try {
-            const result = await registerUser(email, password, nome);
+            // CORREÇÃO: Passando o endereço da loja para o registro
+            const result = await registerUser(email, password, nome, enderecoLoja);
             if (result.success) {
-                alert('Cadastro realizado com sucesso! Você será redirecionado para a página de login.');
+                alert('Cadastro realizado com sucesso! Sua conta será ativada por um administrador.');
                 navigate('/');
             } else {
                 setError(result.error);
@@ -47,6 +49,9 @@ const RegisterPage = () => {
                 {error && <p className="error-message">{error}</p>}
                 <div className="input-group">
                     <input type="text" name="nomeCompleto" className="input-field" placeholder="Nome Completo" required />
+                </div>
+                <div className="input-group">
+                    <input type="text" name="enderecoLoja" className="input-field" placeholder="Endereço da Loja" required />
                 </div>
                 <div className="input-group">
                     <input type="email" name="email" className="input-field" placeholder="Email" required />

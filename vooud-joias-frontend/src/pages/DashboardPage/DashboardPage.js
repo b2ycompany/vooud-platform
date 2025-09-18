@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../../firebase';
-import { collection, doc, runTransaction, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, runTransaction, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { getInventarioForQuiosque } from '../../services/operationsService';
 import { getJoias } from '../../services/catalogService';
 import { useAuth } from '../../context/AuthContext';
@@ -8,40 +9,47 @@ import AdminLayout from '../../components/AdminLayout/AdminLayout';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
-    const { user } = useAuth();
-    
-    // CORREÇÃO: Lê o quiosqueId do perfil do usuário logado
-    const quiosqueId = user ? user.quiosqueId : null; 
-    const vendedorId = user ? user.uid : null; 
+    const { user, loading: authLoading } = useAuth();
+    const navigate = useNavigate();
 
+    // === CORREÇÃO: DECLARAÇÃO DOS HOOKS NO TOPO ===
     const [inventarioDisponivel, setInventarioDisponivel] = useState([]);
     const [carrinho, setCarrinho] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    const quiosqueId = user?.quiosqueId || null; 
+    const vendedorId = user?.uid || null;
+
+    const carregarInventario = useCallback(async () => {
+        setLoading(true);
+        try {
+            const joias = await getJoias();
+            const inventario = await getInventarioForQuiosque(quiosqueId, joias);
+            setInventarioDisponivel(inventario);
+            setError(''); // Limpa o erro caso a carga seja bem-sucedida
+        } catch (err) {
+            console.error("Erro detalhado ao carregar inventário:", err);
+            setError("Falha ao carregar os produtos. Verifique sua conexão ou permissões.");
+        } finally {
+            setLoading(false);
+        }
+    }, [quiosqueId]);
+
     useEffect(() => {
-        const carregarInventario = async () => {
-            if (!vendedorId || !quiosqueId) {
-                // Mensagem específica se o vendedor não tiver um quiosque associado
-                setError("Vendedor não associado a um quiosque. Não é possível carregar o inventário.");
-                setLoading(false);
+        // Redirecionamento e lógica principal do componente
+        if (!authLoading) {
+            if (user?.role === 'administrador') {
+                navigate('/catalogo', { replace: true });
                 return;
             }
-            try {
-                const joias = await getJoias();
-                const inventario = await getInventarioForQuiosque(quiosqueId, joias);
-                setInventarioDisponivel(inventario);
-            } catch (err) {
-                console.error("Erro detalhado ao carregar inventário:", err);
-                setError("Falha ao carregar os produtos. Verifique sua conexão ou permissões.");
-            } finally {
-                setLoading(false);
+            if (user?.role === 'vendedor' && quiosqueId) {
+                carregarInventario();
             }
-        };
-
-        carregarInventario();
-    }, [vendedorId, quiosqueId]);
+        }
+    }, [user, authLoading, quiosqueId, navigate, carregarInventario]);
+    // ===============================================
 
     const clearMessages = () => {
         setError('');
@@ -129,7 +137,9 @@ const DashboardPage = () => {
                         nome: item.nome, 
                         sku: item.sku,
                         quantidade: item.quantidade,
-                        preco_venda: item.preco_venda
+                        preco_venda: item.preco_venda,
+                        percentual_comissao: item.percentual_comissao,
+                        valor_comissao: (item.preco_venda * (item.percentual_comissao / 100)) * item.quantidade
                     })),
                     total: parseFloat(calcularTotal()),
                     data: serverTimestamp()
@@ -146,8 +156,20 @@ const DashboardPage = () => {
         }
     };
     
-    // Renderização condicional
-    if (user && user.role === 'vendedor') {
+    // Mostra o acesso negado apenas se for um vendedor e não tiver quiosque associado.
+    if (user?.role === 'vendedor' && !quiosqueId) {
+        return (
+            <AdminLayout title="Acesso Negado">
+                <div className="access-denied">
+                    <h2>Acesso Negado</h2>
+                    <p>Sua conta ainda não foi associada a um quiosque. Por favor, aguarde a aprovação do administrador.</p>
+                </div>
+            </AdminLayout>
+        );
+    }
+    
+    // Renderiza a tela do PDV se for um vendedor com quiosque
+    if (user?.role === 'vendedor' && quiosqueId) {
         return (
             <AdminLayout title="Ponto de Venda">
                 <div className="dashboard-pdv">
@@ -157,14 +179,18 @@ const DashboardPage = () => {
                         <div className="produtos-disponiveis">
                             <h3>Produtos em Estoque</h3>
                             <div className="lista-produtos">
-                                {inventarioDisponivel.map(item => (
-                                    <div key={item.id} className="produto-card" onClick={() => handleAddItemAoCarrinho(item)}>
-                                        <h4>{item.joia?.nome}</h4>
-                                        <p>Estoque: {item.quantidade}</p>
-                                        <p>R$ {item.joia?.preco_venda ? item.joia.preco_venda.toFixed(2) : '0.00'}</p>
-                                        <p>SKU: {item.joia?.sku}</p>
-                                    </div>
-                                ))}
+                                {loading ? (
+                                    <p>Carregando produtos...</p>
+                                ) : (
+                                    inventarioDisponivel.map(item => (
+                                        <div key={item.id} className="produto-card" onClick={() => handleAddItemAoCarrinho(item)}>
+                                            <h4>{item.joia?.nome}</h4>
+                                            <p>Estoque: {item.quantidade}</p>
+                                            <p>R$ {item.joia?.preco_venda ? item.joia.preco_venda.toFixed(2) : '0.00'}</p>
+                                            <p>SKU: {item.joia?.sku}</p>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                         <div className="carrinho-pdv">
@@ -198,15 +224,8 @@ const DashboardPage = () => {
             </AdminLayout>
         );
     }
-
-    return (
-        <AdminLayout title="Acesso Negado">
-            <div className="access-denied">
-                <h2>Acesso Negado</h2>
-                <p>Apenas vendedores têm permissão para acessar esta página. Entre em contato com o administrador para associar sua conta a um quiosque.</p>
-            </div>
-        </AdminLayout>
-    );
+    
+    return null; // Retorna null enquanto o estado de autenticação está sendo verificado
 };
 
 export default DashboardPage;

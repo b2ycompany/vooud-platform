@@ -11,16 +11,33 @@ const ReportsPage = () => {
         totalVendido: 0,
         totalComissao: 0,
         numeroDeVendas: 0,
+        totalPorLoja: {},
+        comissaoPorVendedor: {},
     });
 
     const calcularIndicadores = useCallback((vendasData) => {
-        const totalVendido = vendasData.reduce((acc, venda) => acc + venda.total_venda, 0);
-        const totalComissao = vendasData.reduce((acc, venda) => acc + venda.total_comissao, 0);
+        const totalVendido = vendasData.reduce((acc, venda) => acc + venda.total, 0);
+        const totalComissao = vendasData.reduce((acc, venda) => acc + (venda.itens ? venda.itens.reduce((total, item) => total + (item.valor_comissao || 0), 0) : 0), 0);
         
+        const totalPorLoja = vendasData.reduce((acc, venda) => {
+            const nomeLoja = venda.nomeLoja || 'N/A';
+            acc[nomeLoja] = (acc[nomeLoja] || 0) + venda.total;
+            return acc;
+        }, {});
+
+        const comissaoPorVendedor = vendasData.reduce((acc, venda) => {
+            const nomeVendedor = venda.nomeVendedor || 'N/A';
+            const totalComissaoVenda = venda.itens.reduce((total, item) => total + (item.valor_comissao || 0), 0);
+            acc[nomeVendedor] = (acc[nomeVendedor] || 0) + totalComissaoVenda;
+            return acc;
+        }, {});
+
         setIndicadores({
             totalVendido,
             totalComissao,
             numeroDeVendas: vendasData.length,
+            totalPorLoja,
+            comissaoPorVendedor,
         });
     }, []);
 
@@ -42,14 +59,13 @@ const ReportsPage = () => {
     }, [fetchData]);
 
     if (loading) {
-        return <AdminLayout title="Indicadores de Vendas"><p>Carregando...</p></AdminLayout>;
+        return <AdminLayout title="Relatórios"><p>Carregando dados...</p></AdminLayout>;
     }
 
     return (
-        <AdminLayout title="Indicadores de Vendas">
+        <AdminLayout title="Relatórios Gerenciais">
             {error && <p className="error-message">{error}</p>}
-
-            <div className="reports-grid">
+            <div className="reports-indicators-grid">
                 <div className="indicator-card">
                     <h4>Total Vendido</h4>
                     <p>R$ {indicadores.totalVendido.toFixed(2)}</p>
@@ -65,11 +81,30 @@ const ReportsPage = () => {
             </div>
 
             <div className="card">
+                <h3>Vendas por Loja</h3>
+                <ul>
+                    {Object.entries(indicadores.totalPorLoja).map(([loja, total]) => (
+                        <li key={loja}><strong>{loja}:</strong> R$ {total.toFixed(2)}</li>
+                    ))}
+                </ul>
+            </div>
+            
+            <div className="card">
+                <h3>Comissões por Vendedor</h3>
+                <ul>
+                    {Object.entries(indicadores.comissaoPorVendedor).map(([vendedor, comissao]) => (
+                        <li key={vendedor}><strong>{vendedor}:</strong> R$ {comissao.toFixed(2)}</li>
+                    ))}
+                </ul>
+            </div>
+
+            <div className="card">
                 <h3>Todas as Vendas</h3>
                 <table>
                     <thead>
                         <tr>
                             <th>Data</th>
+                            <th>Loja</th>
                             <th>Quiosque</th>
                             <th>Vendedor</th>
                             <th>Total (R$)</th>
@@ -79,11 +114,12 @@ const ReportsPage = () => {
                     <tbody>
                         {vendas.map(venda => (
                             <tr key={venda.id}>
-                                <td>{new Date(venda.data_venda.seconds * 1000).toLocaleDateString()}</td>
+                                <td>{new Date(venda.data?.seconds * 1000).toLocaleDateString()}</td>
+                                <td>{venda.nomeLoja}</td>
                                 <td>{venda.identificadorQuiosque}</td>
                                 <td>{venda.nomeVendedor}</td>
-                                <td>{venda.total_venda.toFixed(2)}</td>
-                                <td>{venda.total_comissao.toFixed(2)}</td>
+                                <td>{venda.total?.toFixed(2)}</td>
+                                <td>{venda.itens?.reduce((total, item) => total + (item.valor_comissao || 0), 0).toFixed(2)}</td>
                             </tr>
                         ))}
                     </tbody>
