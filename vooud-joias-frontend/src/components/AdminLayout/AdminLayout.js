@@ -9,31 +9,31 @@ const AdminLayout = ({ title, children }) => {
 
     const handleLogout = async () => {
         await logoutUser();
-        navigate('/'); // Redireciona para a página de login após o logout
+        navigate('/'); // Redireciona para a página de login
     };
+
+    // Define a página principal com base na role do usuário
+    const homeLink = user?.role === 'administrador' ? '/catalogo' : '/dashboard';
 
     return (
         <div className="admin-layout-container">
             <header className="admin-layout-header">
                 <div className="header-top-bar">
-                    <NavLink to={user?.role === 'administrador' ? '/catalogo' : '/dashboard'} className="nav-button back-button">
-                         &larr; Voltar
+                    <NavLink to={homeLink} className="header-title-link">
+                        <h1>{title}</h1>
                     </NavLink>
-                    <h1>{title}</h1>
-                    <button onClick={handleLogout} className="logout-button">Sair</button>
+                    <div className="header-user-info">
+                        <span>Olá, {user?.nome || user?.email}</span>
+                        <button onClick={handleLogout} className="logout-button">Sair</button>
+                    </div>
                 </div>
+                
                 {/* A navegação do administrador só é visível para ele */}
                 {user?.role === 'administrador' && (
                     <nav className="admin-nav">
-                        <NavLink to="/catalogo" className="admin-nav-link">
-                            Catálogo
-                        </NavLink>
-                        <NavLink to="/operacoes" className="admin-nav-link">
-                            Operações
-                        </NavLink>
-                        <NavLink to="/relatorios" className="admin-nav-link">
-                            Relatórios
-                        </NavLink>
+                        <NavLink to="/catalogo" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}>Catálogo</NavLink>
+                        <NavLink to="/operacoes" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}>Operações</NavLink>
+                        <NavLink to="/relatorios" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}>Relatórios</NavLink>
                     </nav>
                 )}
             </header>
