@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
 
     const fetchAndSetUser = async (firebaseUser) => {
         if (firebaseUser) {
-            // Tenta buscar na coleção de administradores
+            // CORREÇÃO CRÍTICA: Tenta buscar na coleção de administradores primeiro
             const adminDocRef = doc(db, "administradores", firebaseUser.uid);
             const adminDocSnap = await getDoc(adminDocRef);
 
