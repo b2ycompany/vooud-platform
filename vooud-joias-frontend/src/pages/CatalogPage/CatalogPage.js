@@ -47,7 +47,6 @@ const JoiaForm = ({ onSave, categorias, initialData = {}, onCancel, loading }) =
                 onValueChange={(values) => setJoia({...joia, preco_venda: values.value})}
                 prefix="R$ "
                 thousandSeparator="."
-                decimalSeparator=","
                 decimalScale={2}
                 fixedDecimalScale
                 required
