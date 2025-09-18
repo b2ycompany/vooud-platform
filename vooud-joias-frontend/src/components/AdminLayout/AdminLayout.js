@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import './AdminLayout.css';
+import './AdminLayout.css'; // Importando o nosso novo CSS
 
 const AdminLayout = ({ title, children }) => {
     const { logoutUser, user } = useAuth();
@@ -9,10 +9,9 @@ const AdminLayout = ({ title, children }) => {
 
     const handleLogout = async () => {
         await logoutUser();
-        navigate('/'); // Redireciona para a página de login
+        navigate('/');
     };
 
-    // Define a página principal com base na role do usuário
     const homeLink = user?.role === 'administrador' ? '/catalogo' : '/dashboard';
 
     return (
@@ -28,12 +27,26 @@ const AdminLayout = ({ title, children }) => {
                     </div>
                 </div>
                 
-                {/* A navegação do administrador só é visível para ele */}
                 {user?.role === 'administrador' && (
                     <nav className="admin-nav">
-                        <NavLink to="/catalogo" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}>Catálogo</NavLink>
-                        <NavLink to="/operacoes" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}>Operações</NavLink>
-                        <NavLink to="/relatorios" className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}>Relatórios</NavLink>
+                        <NavLink 
+                            to="/catalogo" 
+                            className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}
+                        >
+                            Catálogo
+                        </NavLink>
+                        <NavLink 
+                            to="/operacoes" 
+                            className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}
+                        >
+                            Operações
+                        </NavLink>
+                        <NavLink 
+                            to="/relatorios" 
+                            className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}
+                        >
+                            Relatórios
+                        </NavLink>
                     </nav>
                 )}
             </header>
