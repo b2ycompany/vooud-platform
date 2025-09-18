@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { collection, doc, runTransaction, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
-import { getInventarioForQuiosque } from '../../services/operationsService'; // Importa a função correta
+import { collection, doc, runTransaction, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getInventarioForQuiosque } from '../../services/operationsService';
 import { getJoias } from '../../services/catalogService';
 import { useAuth } from '../../context/AuthContext';
 import AdminLayout from '../../components/AdminLayout/AdminLayout';
@@ -10,8 +10,8 @@ import './DashboardPage.css';
 const DashboardPage = () => {
     const { user } = useAuth();
     
-    // TODO: A lógica para obter o quiosque deve ser implementada em produção
-    const quiosqueId = "ID_DO_QUIOSQUE_ATUAL"; 
+    // CORREÇÃO: Lê o quiosqueId do perfil do usuário logado
+    const quiosqueId = user ? user.quiosqueId : null; 
     const vendedorId = user ? user.uid : null; 
 
     const [inventarioDisponivel, setInventarioDisponivel] = useState([]);
@@ -23,18 +23,20 @@ const DashboardPage = () => {
     useEffect(() => {
         const carregarInventario = async () => {
             if (!vendedorId || !quiosqueId) {
-                setError("Vendedor ou quiosque não identificado. Não é possível carregar o inventário.");
+                // Mensagem específica se o vendedor não tiver um quiosque associado
+                setError("Vendedor não associado a um quiosque. Não é possível carregar o inventário.");
+                setLoading(false);
                 return;
             }
             try {
-                // Busque as joias primeiro, que são os detalhes dos produtos
                 const joias = await getJoias();
-                // Em seguida, busque o inventário do quiosque específico
                 const inventario = await getInventarioForQuiosque(quiosqueId, joias);
                 setInventarioDisponivel(inventario);
             } catch (err) {
                 console.error("Erro detalhado ao carregar inventário:", err);
                 setError("Falha ao carregar os produtos. Verifique sua conexão ou permissões.");
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -144,52 +146,64 @@ const DashboardPage = () => {
         }
     };
     
-    return (
-        <AdminLayout title="Ponto de Venda">
-            <div className="dashboard-pdv">
-                {error && <p className="error-message">{error}</p>}
-                {success && <p className="success-message">{success}</p>}
-                <div className="pdv-grid">
-                    <div className="produtos-disponiveis">
-                        <h3>Produtos em Estoque</h3>
-                        <div className="lista-produtos">
-                            {inventarioDisponivel.map(item => (
-                                <div key={item.id} className="produto-card" onClick={() => handleAddItemAoCarrinho(item)}>
-                                    <h4>{item.joia?.nome}</h4>
-                                    <p>Estoque: {item.quantidade}</p>
-                                    <p>R$ {item.joia?.preco_venda ? item.joia.preco_venda.toFixed(2) : '0.00'}</p>
-                                    <p>SKU: {item.joia?.sku}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="carrinho-pdv">
-                        <h3>Carrinho</h3>
-                        <div className="lista-carrinho">
-                            {carrinho.length === 0 ? (
-                                <p>Nenhum item adicionado.</p>
-                            ) : (
-                                carrinho.map(item => (
-                                    <div key={item.inventarioId} className="carrinho-item">
-                                        <span>{item.nome} (x{item.quantidade})</span>
-                                        <span>R$ {((item.preco_venda || 0) * item.quantidade).toFixed(2)}</span>
-                                        <button onClick={() => handleRemoverItemDoCarrinho(item.inventarioId)} className="remove-btn">Remover</button>
+    // Renderização condicional
+    if (user && user.role === 'vendedor') {
+        return (
+            <AdminLayout title="Ponto de Venda">
+                <div className="dashboard-pdv">
+                    {error && <p className="error-message">{error}</p>}
+                    {success && <p className="success-message">{success}</p>}
+                    <div className="pdv-grid">
+                        <div className="produtos-disponiveis">
+                            <h3>Produtos em Estoque</h3>
+                            <div className="lista-produtos">
+                                {inventarioDisponivel.map(item => (
+                                    <div key={item.id} className="produto-card" onClick={() => handleAddItemAoCarrinho(item)}>
+                                        <h4>{item.joia?.nome}</h4>
+                                        <p>Estoque: {item.quantidade}</p>
+                                        <p>R$ {item.joia?.preco_venda ? item.joia.preco_venda.toFixed(2) : '0.00'}</p>
+                                        <p>SKU: {item.joia?.sku}</p>
                                     </div>
-                                ))
-                            )}
+                                ))}
+                            </div>
                         </div>
-                        <div className="carrinho-total">
-                            <strong>Total: R$ {calcularTotal()}</strong>
+                        <div className="carrinho-pdv">
+                            <h3>Carrinho</h3>
+                            <div className="lista-carrinho">
+                                {carrinho.length === 0 ? (
+                                    <p>Nenhum item adicionado.</p>
+                                ) : (
+                                    carrinho.map(item => (
+                                        <div key={item.inventarioId} className="carrinho-item">
+                                            <span>{item.nome} (x{item.quantidade})</span>
+                                            <span>R$ {((item.preco_venda || 0) * item.quantidade).toFixed(2)}</span>
+                                            <button onClick={() => handleRemoverItemDoCarrinho(item.inventarioId)} className="remove-btn">Remover</button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                            <div className="carrinho-total">
+                                <strong>Total: R$ {calcularTotal()}</strong>
+                            </div>
+                            <button 
+                                className="finalizar-venda-btn" 
+                                onClick={handleFinalizarVenda} 
+                                disabled={loading || carrinho.length === 0}
+                            >
+                                {loading ? 'Processando...' : 'Finalizar Venda'}
+                            </button>
                         </div>
-                        <button 
-                            className="finalizar-venda-btn" 
-                            onClick={handleFinalizarVenda} 
-                            disabled={loading || carrinho.length === 0}
-                        >
-                            {loading ? 'Processando...' : 'Finalizar Venda'}
-                        </button>
                     </div>
                 </div>
+            </AdminLayout>
+        );
+    }
+
+    return (
+        <AdminLayout title="Acesso Negado">
+            <div className="access-denied">
+                <h2>Acesso Negado</h2>
+                <p>Apenas vendedores têm permissão para acessar esta página. Entre em contato com o administrador para associar sua conta a um quiosque.</p>
             </div>
         </AdminLayout>
     );
