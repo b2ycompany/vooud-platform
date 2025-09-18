@@ -12,7 +12,20 @@ const DashboardPage = () => {
     const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
-    // === CORREÇÃO: DECLARAÇÃO DOS HOOKS NO TOPO ===
+    // Redirecionamento e lógica principal do componente
+    useEffect(() => {
+        if (!authLoading) {
+            if (user?.role === 'administrador') {
+                navigate('/catalogo', { replace: true });
+                return;
+            }
+            if (user?.role === 'vendedor' && user?.quiosqueId) {
+                carregarInventario();
+            }
+        }
+    }, [user, authLoading, navigate]);
+
+    // === DECLARAÇÃO DOS HOOKS NO TOPO ===
     const [inventarioDisponivel, setInventarioDisponivel] = useState([]);
     const [carrinho, setCarrinho] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -36,20 +49,6 @@ const DashboardPage = () => {
             setLoading(false);
         }
     }, [quiosqueId]);
-
-    useEffect(() => {
-        // Redirecionamento e lógica principal do componente
-        if (!authLoading) {
-            if (user?.role === 'administrador') {
-                navigate('/catalogo', { replace: true });
-                return;
-            }
-            if (user?.role === 'vendedor' && quiosqueId) {
-                carregarInventario();
-            }
-        }
-    }, [user, authLoading, quiosqueId, navigate, carregarInventario]);
-    // ===============================================
 
     const clearMessages = () => {
         setError('');
