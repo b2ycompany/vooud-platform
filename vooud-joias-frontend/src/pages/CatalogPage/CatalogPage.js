@@ -34,60 +34,71 @@ const JoiaForm = ({ onSave, categorias, initialData = {}, onCancel, loading }) =
     return (
         <form onSubmit={handleSubmit}>
             <input type="text" placeholder="Nome da Joia" value={joia.nome || ''} onChange={(e) => setJoia({...joia, nome: e.target.value})} required />
-            <input type="text" placeholder="SKU (Código Único)" value={joia.sku || ''} onChange={(e) => setJoia({...joia, sku: e.target.value})} required disabled={isEditing} />
+            <input type="text" placeholder="SKU" value={joia.sku || ''} onChange={(e) => setJoia({...joia, sku: e.target.value})} required />
             <select value={joia.categoriaId || ''} onChange={(e) => setJoia({...joia, categoriaId: e.target.value})} required>
                 <option value="">Selecione uma Categoria</option>
-                {categorias.map(cat => <option key={cat.id} value={cat.id}>{cat.nome}</option>)}
+                {categorias.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                ))}
             </select>
             <NumericFormat
-                className="input-field"
-                placeholder="Preço de Venda (R$)"
+                placeholder="Preço de Venda"
                 value={joia.preco_venda || ''}
-                thousandSeparator="." decimalSeparator="," prefix="R$ "
-                onValueChange={(values) => setJoia({...joia, preco_venda: values.floatValue})}
+                onValueChange={(values) => setJoia({...joia, preco_venda: values.value})}
+                prefix="R$ "
+                thousandSeparator="."
+                decimalSeparator=","
+                decimalScale={2}
+                fixedDecimalScale
                 required
+                className="input-field"
             />
-            <input
-                type="number"
-                step="0.01"
-                placeholder="Comissão (%)"
+            <NumericFormat
+                placeholder="Percentual de Comissão"
                 value={joia.percentual_comissao || ''}
-                onChange={(e) => setJoia({...joia, percentual_comissao: e.target.value})}
+                onValueChange={(values) => setJoia({...joia, percentual_comissao: values.value})}
+                suffix=" %"
+                decimalScale={2}
+                fixedDecimalScale
                 required
+                className="input-field"
             />
-            {!isEditing && (
-                <>
-                    <label>Imagens da Joia</label>
-                    <input type="file" multiple onChange={(e) => setImagens(e.target.files)} required />
-                </>
-            )}
-            <div className="form-actions">
+            <label>
+                {!isEditing ? "Adicionar Imagens:" : "Mudar Imagens (opcional):"}
+                <input type="file" multiple onChange={(e) => setImagens(e.target.files)} />
+            </label>
+            <div className="modal-actions">
+                <button type="submit" className="action-button" disabled={loading}>{loading ? 'Salvando...' : 'Salvar'}</button>
                 <button type="button" onClick={onCancel} className="cancel-button" disabled={loading}>Cancelar</button>
-                <button type="submit" className="save-button" disabled={loading}>{loading ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Adicionar Joia')}</button>
             </div>
         </form>
     );
 };
 
 const CatalogPage = () => {
-    const [categorias, setCategorias] = useState([]);
     const [joias, setJoias] = useState([]);
-    const [nomeCategoria, setNomeCategoria] = useState('');
+    const [categorias, setCategorias] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingJoia, setEditingJoia] = useState(null);
+    const [currentJoia, setCurrentJoia] = useState(null);
+    const [loadingModal, setLoadingModal] = useState(false);
 
+    // Adicionado useCallback para memoizar a função e evitar loops infinitos no useEffect
     const fetchData = useCallback(async () => {
         setLoading(true);
+        setError('');
         try {
-            const catList = await getCategorias();
-            setCategorias(catList);
-            const joiaList = await getJoias(catList);
-            setJoias(joiaList);
+            // CORREÇÃO CRÍTICA: Carregando categorias primeiro
+            const fetchedCategorias = await getCategorias();
+            setCategorias(fetchedCategorias);
+            
+            // CORREÇÃO CRÍTICA: Passando as categorias para o getJoias
+            const fetchedJoias = await getJoias(fetchedCategorias);
+            setJoias(fetchedJoias);
         } catch (err) {
-            setError("Erro ao carregar dados do catálogo.");
+            console.error("Erro detalhado ao carregar dados do catálogo:", err);
+            setError("Falha ao carregar as joias ou categorias. Por favor, tente novamente.");
         } finally {
             setLoading(false);
         }
@@ -97,101 +108,67 @@ const CatalogPage = () => {
         fetchData();
     }, [fetchData]);
 
-    const handleAddCategoria = async (e) => {
-        e.preventDefault();
-        if (!nomeCategoria) return;
-        setLoading(true);
-        try {
-            const newCategoria = await addCategoria(nomeCategoria);
-            setCategorias(prev => [...prev, newCategoria]);
-            setSuccess('Categoria adicionada!');
-            setNomeCategoria('');
-        } catch (err) {
-            setError('Erro ao adicionar categoria.');
-        } finally {
-            setLoading(false);
-        }
+    const openModalForNew = () => {
+        setCurrentJoia(null);
+        setIsModalOpen(true);
+    };
+
+    const openModalForEdit = (joia) => {
+        setCurrentJoia(joia);
+        setIsModalOpen(true);
     };
 
     const handleSaveJoia = async (joiaData, imagens) => {
-        setLoading(true);
+        setLoadingModal(true);
         setError('');
-        setSuccess('');
         try {
-            if (editingJoia) {
-                await updateJoia(editingJoia.id, joiaData);
-                setSuccess('Joia atualizada com sucesso!');
+            if (joiaData.id) {
+                await updateJoia(joiaData.id, joiaData, imagens);
             } else {
                 await addJoiaWithImages(joiaData, imagens);
-                setSuccess('Joia adicionada com sucesso!');
             }
-            fetchData();
-            closeModal();
+            await fetchData(); // Recarrega os dados após a operação
+            setIsModalOpen(false);
         } catch (err) {
-            setError(err.message || 'Ocorreu um erro ao salvar a joia.');
+            console.error("Erro ao salvar a joia:", err);
+            setError(err.message || "Ocorreu um erro ao salvar a joia.");
         } finally {
-            setLoading(false);
+            setLoadingModal(false);
         }
     };
 
     const handleDeleteJoia = async (joiaId) => {
-        if (!window.confirm("Tem certeza que deseja excluir esta joia?")) return;
-        setLoading(true);
-        try {
-            await deleteJoia(joiaId);
-            setSuccess('Joia excluída com sucesso!');
-            fetchData();
-        } catch (err) {
-            setError('Erro ao excluir joia.');
-        } finally {
-            setLoading(false);
+        if (window.confirm("Tem certeza que deseja excluir esta joia?")) {
+            setLoading(true);
+            try {
+                await deleteJoia(joiaId);
+                await fetchData(); // Recarrega os dados após a exclusão
+            } catch (err) {
+                console.error("Erro ao excluir joia:", err);
+                setError("Ocorreu um erro ao excluir a joia.");
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
-    const openModalForEdit = (joia) => {
-        setEditingJoia(joia);
-        setIsModalOpen(true);
-    };
-
-    const openModalForNew = () => {
-        setEditingJoia(null);
-        setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setEditingJoia(null);
-    };
-
     return (
-        <AdminLayout title="Gerenciamento de Catálogo">
+        <AdminLayout title="Catálogo de Joias">
+            {loading && <p className="loading-message">Carregando dados...</p>}
             {error && <p className="error-message">{error}</p>}
-            {success && <p className="success-message">{success}</p>}
-
-            <Modal show={isModalOpen} onClose={closeModal} title={editingJoia ? 'Editar Joia' : 'Adicionar Nova Joia'}>
-                <JoiaForm
-                    onSave={handleSaveJoia}
-                    categorias={categorias}
-                    initialData={editingJoia || {}}
-                    onCancel={closeModal}
-                    loading={loading}
+            
+            <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} title={currentJoia ? 'Editar Joia' : 'Adicionar Nova Joia'}>
+                <JoiaForm 
+                    onSave={handleSaveJoia} 
+                    categorias={categorias} 
+                    initialData={currentJoia || {}} 
+                    onCancel={() => setIsModalOpen(false)} 
+                    loading={loadingModal} 
                 />
             </Modal>
 
-            <div className="card">
-                <h3>Categorias</h3>
-                <form onSubmit={handleAddCategoria} className="category-form">
-                    <input type="text" placeholder="Nome da Nova Categoria" value={nomeCategoria} onChange={(e) => setNomeCategoria(e.target.value)} />
-                    <button type="submit" disabled={loading}>{loading ? '...' : 'Adicionar'}</button>
-                </form>
-                <ul className="category-list">
-                    {categorias.map(cat => (<li key={cat.id}>{cat.nome}</li>))}
-                </ul>
-            </div>
-
-            <div className="card catalog-list">
-                <div className="list-header">
-                    <h3>Joias Cadastradas</h3>
+            <div className="catalog-container">
+                <div className="catalog-header">
                     <button onClick={openModalForNew} className="add-button">Adicionar Nova Joia</button>
                 </div>
                 <table>
