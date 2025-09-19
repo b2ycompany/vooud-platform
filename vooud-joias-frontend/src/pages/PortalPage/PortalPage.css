@@ -1,0 +1,139 @@
+/* Definindo as variáveis de cor para o nosso tema "Joia Rara" */
+:root {
+    --background-deep-space: #0D0D1A;
+    --card-background: #1A1A2E;
+    --font-color-light: #E0E0E0;
+    --font-color-muted: #9A9A9A;
+    --accent-gold: #D4AF37;
+    --accent-gold-transparent: #d4af3755;
+}
+
+.portal-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: var(--background-deep-space);
+    color: var(--font-color-light);
+    text-align: center;
+    padding: 2rem;
+    overflow: hidden; /* Garante que os efeitos não vazem da tela */
+}
+
+.portal-title {
+    font-family: 'Garamond', 'Times New Roman', serif; /* Uma fonte mais clássica e elegante */
+    font-size: 4.5rem;
+    font-weight: 600;
+    letter-spacing: 0.6rem;
+    color: var(--accent-gold);
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 15px var(--accent-gold-transparent);
+}
+
+.portal-subtitle {
+    font-size: 1.2rem;
+    color: var(--font-color-muted);
+    margin-bottom: 4rem;
+    font-style: italic;
+}
+
+.portal-cards {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* O CARD E SEU EFEITO DE TIRAR O FÔLEGO */
+.portal-card {
+    width: 300px;
+    height: 250px;
+    background: var(--card-background);
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.4s ease;
+    z-index: 1;
+}
+
+.portal-card:hover {
+    transform: scale(1.05); /* Efeito de zoom sutil */
+}
+
+/* O BRILHO ANIMADO - A MÁGICA ACONTECE AQUI */
+.portal-card::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 400px; /* Maior que o card para o efeito de rotação */
+    height: 400px;
+    background: conic-gradient(
+        transparent,
+        transparent,
+        transparent,
+        var(--accent-gold)
+    );
+    transform: translate(-50%, -50%);
+    animation: rotate 4s linear infinite;
+    z-index: 2;
+    transition: opacity 0.4s ease;
+}
+
+.portal-card:hover::before {
+    animation-duration: 2s; /* Acelera o brilho no hover */
+}
+
+/* CONTEÚDO DO CARD - FICA ACIMA DO BRILHO */
+.card-content {
+    position: absolute;
+    inset: 3px; /* Cria a "borda" onde o brilho vai aparecer */
+    background: var(--background-deep-space);
+    border-radius: 8px;
+    z-index: 3;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--accent-gold);
+}
+
+.card-content h3 {
+    font-size: 1.6rem;
+    margin: 0 0 0.5rem 0;
+    color: var(--font-color-light);
+}
+
+.card-content p {
+    color: var(--font-color-muted);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* CARD DE FRANQUEADO - O DESTAQUE "ELITE" */
+.franchise-card {
+    /* Não precisa de CSS extra aqui, o destaque será no conteúdo */
+}
+
+.franchise-card .card-content h3 {
+    color: var(--accent-gold); /* Título em dourado para chamar atenção */
+    text-shadow: 0 0 10px var(--accent-gold-transparent);
+}
+
+/* Animação que rotaciona o brilho */
+@keyframes rotate {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
