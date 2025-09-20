@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-toastify'; // ADICIONADO: Import do toast
 import AdminLayout from '../../components/AdminLayout/AdminLayout';
 import Modal from '../../components/Modal/Modal';
 import { NumericFormat } from 'react-number-format';
@@ -23,6 +24,11 @@ const JoiaForm = ({ onSave, categorias, initialData = {}, onCancel, loading }) =
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        // Validação básica para garantir que imagens foram selecionadas ao criar
+        if (!isEditing && !imagens) {
+            toast.error("Por favor, adicione pelo menos uma imagem para a nova joia.");
+            return;
+        }
         const dataToSave = {
             ...joia,
             preco_venda: parseFloat(joia.preco_venda || 0),
@@ -32,10 +38,10 @@ const JoiaForm = ({ onSave, categorias, initialData = {}, onCancel, loading }) =
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <input type="text" placeholder="Nome da Joia" value={joia.nome || ''} onChange={(e) => setJoia({...joia, nome: e.target.value})} required />
-            <input type="text" placeholder="SKU" value={joia.sku || ''} onChange={(e) => setJoia({...joia, sku: e.target.value})} required />
-            <select value={joia.categoriaId || ''} onChange={(e) => setJoia({...joia, categoriaId: e.target.value})} required>
+        <form onSubmit={handleSubmit} className="stacked-form">
+            <input type="text" placeholder="Nome da Joia" value={joia.nome || ''} onChange={(e) => setJoia({...joia, nome: e.target.value})} required className="input-field" />
+            <input type="text" placeholder="SKU" value={joia.sku || ''} onChange={(e) => setJoia({...joia, sku: e.target.value})} required className="input-field" />
+            <select value={joia.categoriaId || ''} onChange={(e) => setJoia({...joia, categoriaId: e.target.value})} required className="select-field">
                 <option value="">Selecione uma Categoria</option>
                 {categorias.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.nome}</option>
@@ -47,6 +53,7 @@ const JoiaForm = ({ onSave, categorias, initialData = {}, onCancel, loading }) =
                 onValueChange={(values) => setJoia({...joia, preco_venda: values.value})}
                 prefix="R$ "
                 thousandSeparator="."
+                decimalSeparator=","
                 decimalScale={2}
                 fixedDecimalScale
                 required
@@ -57,18 +64,20 @@ const JoiaForm = ({ onSave, categorias, initialData = {}, onCancel, loading }) =
                 value={joia.percentual_comissao || ''}
                 onValueChange={(values) => setJoia({...joia, percentual_comissao: values.value})}
                 suffix=" %"
+                thousandSeparator="."
+                decimalSeparator=","
                 decimalScale={2}
                 fixedDecimalScale
                 required
                 className="input-field"
             />
-            <label>
+            <label className="file-input-label">
                 {!isEditing ? "Adicionar Imagens:" : "Mudar Imagens (opcional):"}
                 <input type="file" multiple onChange={(e) => setImagens(e.target.files)} />
             </label>
-            <div className="modal-actions">
-                <button type="submit" className="action-button" disabled={loading}>{loading ? 'Salvando...' : 'Salvar'}</button>
+            <div className="form-actions">
                 <button type="button" onClick={onCancel} className="cancel-button" disabled={loading}>Cancelar</button>
+                <button type="submit" className="save-button" disabled={loading}>{loading ? 'Salvando...' : 'Salvar'}</button>
             </div>
         </form>
     );
@@ -78,26 +87,22 @@ const CatalogPage = () => {
     const [joias, setJoias] = useState([]);
     const [categorias, setCategorias] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    // REMOVIDO: const [error, setError] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentJoia, setCurrentJoia] = useState(null);
     const [loadingModal, setLoadingModal] = useState(false);
 
-    // Adicionado useCallback para memoizar a função e evitar loops infinitos no useEffect
     const fetchData = useCallback(async () => {
         setLoading(true);
-        setError('');
         try {
-            // CORREÇÃO CRÍTICA: Carregando categorias primeiro
             const fetchedCategorias = await getCategorias();
             setCategorias(fetchedCategorias);
             
-            // CORREÇÃO CRÍTICA: Passando as categorias para o getJoias
             const fetchedJoias = await getJoias(fetchedCategorias);
             setJoias(fetchedJoias);
         } catch (err) {
             console.error("Erro detalhado ao carregar dados do catálogo:", err);
-            setError("Falha ao carregar as joias ou categorias. Por favor, tente novamente.");
+            toast.error("Falha ao carregar o catálogo. Tente novamente."); // ALTERADO
         } finally {
             setLoading(false);
         }
@@ -119,18 +124,19 @@ const CatalogPage = () => {
 
     const handleSaveJoia = async (joiaData, imagens) => {
         setLoadingModal(true);
-        setError('');
         try {
             if (joiaData.id) {
                 await updateJoia(joiaData.id, joiaData, imagens);
+                toast.success('Joia atualizada com sucesso!'); // ADICIONADO
             } else {
                 await addJoiaWithImages(joiaData, imagens);
+                toast.success('Joia adicionada com sucesso!'); // ADICIONADO
             }
-            await fetchData(); // Recarrega os dados após a operação
+            await fetchData();
             setIsModalOpen(false);
         } catch (err) {
             console.error("Erro ao salvar a joia:", err);
-            setError(err.message || "Ocorreu um erro ao salvar a joia.");
+            toast.error(err.message || "Ocorreu um erro ao salvar a joia."); // ALTERADO
         } finally {
             setLoadingModal(false);
         }
@@ -141,10 +147,11 @@ const CatalogPage = () => {
             setLoading(true);
             try {
                 await deleteJoia(joiaId);
-                await fetchData(); // Recarrega os dados após a exclusão
+                toast.success("Joia excluída com sucesso!"); // ADICIONADO
+                await fetchData();
             } catch (err) {
                 console.error("Erro ao excluir joia:", err);
-                setError("Ocorreu um erro ao excluir a joia.");
+                toast.error("Ocorreu um erro ao excluir a joia."); // ALTERADO
             } finally {
                 setLoading(false);
             }
@@ -153,8 +160,7 @@ const CatalogPage = () => {
 
     return (
         <AdminLayout title="Catálogo de Joias">
-            {loading && <p className="loading-message">Carregando dados...</p>}
-            {error && <p className="error-message">{error}</p>}
+            {/* REMOVIDO: A exibição de 'loading' e 'error' que ficava aqui */}
             
             <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} title={currentJoia ? 'Editar Joia' : 'Adicionar Nova Joia'}>
                 <JoiaForm 
@@ -168,29 +174,36 @@ const CatalogPage = () => {
 
             <div className="catalog-container">
                 <div className="catalog-header">
+                    <h2>Produtos Cadastrados</h2>
                     <button onClick={openModalForNew} className="add-button">Adicionar Nova Joia</button>
                 </div>
-                <table>
-                    <thead>
-                        <tr><th>Imagem</th><th>Nome</th><th>SKU</th><th>Categoria</th><th>Preço (R$)</th><th>Comissão (%)</th><th>Ações</th></tr>
-                    </thead>
-                    <tbody>
-                        {joias.map(joia => (
-                            <tr key={joia.id}>
-                                <td><img src={joia.imagem_principal_url || 'https://via.placeholder.com/50'} alt={joia.nome} className="joia-thumbnail" /></td>
-                                <td>{joia.nome}</td>
-                                <td>{joia.sku}</td>
-                                <td>{joia.nomeCategoria}</td>
-                                <td>{joia.preco_venda?.toFixed(2)}</td>
-                                <td>{joia.percentual_comissao?.toFixed(2)}</td>
-                                <td>
-                                    <button className="action-button edit-button" onClick={() => openModalForEdit(joia)}>Editar</button>
-                                    <button className="action-button delete-button" onClick={() => handleDeleteJoia(joia.id)} disabled={loading}>Excluir</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                {loading ? (
+                    <p>Carregando catálogo...</p>
+                ) : (
+                    <div className="table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>Imagem</th><th>Nome</th><th>SKU</th><th>Categoria</th><th>Preço (R$)</th><th>Comissão (%)</th><th>Ações</th></tr>
+                            </thead>
+                            <tbody>
+                                {joias.map(joia => (
+                                    <tr key={joia.id}>
+                                        <td><img src={joia.imagem_principal_url || 'https://via.placeholder.com/50'} alt={joia.nome} className="joia-thumbnail" /></td>
+                                        <td>{joia.nome}</td>
+                                        <td>{joia.sku}</td>
+                                        <td>{joia.nomeCategoria}</td>
+                                        <td>{joia.preco_venda?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                        <td>{joia.percentual_comissao?.toFixed(2)}%</td>
+                                        <td className="actions-cell">
+                                            <button className="action-button edit-button" onClick={() => openModalForEdit(joia)}>Editar</button>
+                                            <button className="action-button delete-button" onClick={() => handleDeleteJoia(joia.id)} disabled={loading}>Excluir</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </AdminLayout>
     );

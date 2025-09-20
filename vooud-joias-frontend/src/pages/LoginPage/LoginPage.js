@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify'; // ADICIONADO: Import do toast
 import '../../styles/Auth.css';
 
 const LoginPage = () => {
-    const { loginUser, user } = useAuth(); // 'user' não é mais necessário para o redirecionamento aqui, mas pode ser útil
-    const navigate = useNavigate();
-    const [error, setError] = useState(null);
+    const { loginUser } = useAuth();
+    // REMOVIDO: const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        setError(null);
         setLoading(true);
 
         const email = event.target.email.value;
@@ -21,17 +20,16 @@ const LoginPage = () => {
         setLoading(false);
         
         if (result.error) {
-            setError(result.error);
+            toast.error(result.error); // ALTERADO: Usa toast para exibir o erro
         }
-        // O redirecionamento agora é tratado pelo componente PublicRoute e pelo AuthContext.
-        // Isso evita que a página pisque ou tente redirecionar antes do estado 'user' ser atualizado.
+        // O redirecionamento é tratado pelo AuthContext e App.js, então não há 'toast.success' aqui.
     };
 
     return (
         <div className="auth-container">
             <form className="auth-form" onSubmit={handleSubmit}>
                 <h2 className="auth-title">VOOUD</h2>
-                {error && <p className="error-message">{error}</p>}
+                {/* REMOVIDO: A exibição da mensagem de erro que ficava aqui */}
                 <div className="input-group">
                     <input type="email" name="email" className="input-field" placeholder="Email" required />
                 </div>

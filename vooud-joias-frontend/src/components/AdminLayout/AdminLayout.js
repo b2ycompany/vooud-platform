@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import './AdminLayout.css'; // Importando o nosso novo CSS
+import './AdminLayout.css';
 
 const AdminLayout = ({ title, children }) => {
     const { logoutUser, user } = useAuth();
@@ -40,6 +40,13 @@ const AdminLayout = ({ title, children }) => {
                             className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}
                         >
                             Operações
+                        </NavLink>
+                        {/* ADICIONADO: Novo link de navegação para a página de Estoque */}
+                        <NavLink 
+                            to="/estoque-geral" 
+                            className={({ isActive }) => isActive ? "admin-nav-link active" : "admin-nav-link"}
+                        >
+                            Estoque Geral
                         </NavLink>
                         <NavLink 
                             to="/relatorios" 

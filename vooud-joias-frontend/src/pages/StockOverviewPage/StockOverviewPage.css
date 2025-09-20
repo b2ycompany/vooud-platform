@@ -1,0 +1,49 @@
+.search-bar-container {
+    margin-bottom: 1.5rem;
+    max-width: 400px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    width: 100%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table th,
+table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    border-top: 1px solid #dee2e6;
+}
+
+table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+table td strong {
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.distribution-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.distribution-list li {
+    padding: 2px 0;
+    font-size: 0.9em;
+    color: #495057;
+}

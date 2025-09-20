@@ -1,46 +1,28 @@
-/* === ESTRUTURA PRINCIPAL DO PDV === */
-.dashboard-pdv {
-    padding: 20px;
-    background-color: #f4f7f6;
-    font-family: Arial, sans-serif;
-    height: calc(100vh - 40px); /* Ocupa a altura da tela, descontando o padding */
-    display: flex;
-    flex-direction: column;
+/* === ESTRUTURA GERAL E MENSAGENS === */
+.dashboard-pdv-container {
+    /* container principal para as views */
 }
 
-/* === MENSAGENS DE FEEDBACK (ERRO E SUCESSO) === */
 .error-message, .success-message {
     padding: 15px;
     margin-bottom: 20px;
     border-radius: 8px;
     text-align: center;
     font-weight: bold;
-    font-size: 1.1em;
 }
+.error-message { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+.success-message { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
 
-.error-message {
-    color: #721c24;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-}
-
-.success-message {
-    color: #155724;
-    background-color: #d4edda;
-    border: 1px solid #c3e6cb;
-}
-
-/* === GRID LAYOUT (PRODUTOS | CARRINHO) === */
+/* === TELA PRINCIPAL DO PDV (Ponto de Venda) === */
 .pdv-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr; /* Coluna de produtos é 2x maior que a do carrinho */
+    grid-template-columns: 2fr 1fr;
     gap: 20px;
-    flex-grow: 1; /* Faz o grid ocupar o espaço restante */
-    overflow: hidden; /* Evita que o conteúdo interno cause scroll na página inteira */
+    height: calc(100vh - 150px); /* Ajuste de altura para caber no layout */
+    overflow: hidden;
 }
 
-/* === COLUNA DA ESQUERDA (PRODUTOS DISPONÍVEIS) === */
-.produtos-disponiveis {
+.produtos-disponiveis, .carrinho-pdv {
     background-color: #ffffff;
     padding: 20px;
     border-radius: 8px;
@@ -50,7 +32,7 @@
     overflow: hidden;
 }
 
-.produtos-disponiveis h3 {
+.produtos-disponiveis h3, .carrinho-pdv h3 {
     margin-top: 0;
     margin-bottom: 15px;
     text-align: center;
@@ -60,8 +42,8 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 15px;
-    overflow-y: auto; /* Adiciona scroll apenas na lista de produtos */
-    padding-right: 10px; /* Espaço para a barra de rolagem */
+    overflow-y: auto;
+    padding: 5px;
 }
 
 .produto-card {
@@ -71,45 +53,19 @@
     text-align: center;
     cursor: pointer;
     transition: box-shadow 0.3s, transform 0.2s;
-    background-color: #fff;
 }
-
 .produto-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
-.produto-card h4 {
-    margin: 0 0 5px 0;
-    font-size: 1em;
-}
-
-.produto-card p {
-    margin: 5px 0;
-    color: #555;
-}
-
-/* === COLUNA DA DIREITA (CARRINHO DE COMPRAS) === */
-.carrinho-pdv {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    display: flex;
-    flex-direction: column; /* Organiza os itens do carrinho verticalmente */
-}
-
-.carrinho-pdv h3 {
-    margin-top: 0;
-    text-align: center;
-}
+.produto-card h4 { margin: 0 0 5px 0; font-size: 1em; }
+.produto-card p { margin: 5px 0; color: #555; }
 
 .lista-carrinho {
-    flex-grow: 1; /* Faz a lista de itens ocupar o espaço disponível */
-    overflow-y: auto; /* Adiciona scroll se a lista for grande */
+    flex-grow: 1;
+    overflow-y: auto;
     margin-bottom: 15px;
 }
-
 .carrinho-item {
     display: flex;
     justify-content: space-between;
@@ -117,7 +73,6 @@
     padding: 10px 5px;
     border-bottom: 1px solid #f0f0f0;
 }
-
 .remove-btn {
     background-color: #ff4d4d;
     color: white;
@@ -125,22 +80,16 @@
     padding: 5px 10px;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.3s;
 }
+.remove-btn:hover { background-color: #e60000; }
 
-.remove-btn:hover {
-    background-color: #e60000;
-}
-
-/* === TOTAL E BOTÃO DE FINALIZAR VENDA === */
 .carrinho-total {
     border-top: 2px solid #333;
     padding-top: 15px;
-    margin-top: auto; /* Empurra o total para o final do container flex */
+    margin-top: auto;
     font-size: 1.3em;
     font-weight: bold;
 }
-
 .finalizar-venda-btn {
     width: 100%;
     padding: 15px;
@@ -152,31 +101,10 @@
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s;
 }
+.finalizar-venda-btn:hover { background-color: #218838; }
 
-.finalizar-venda-btn:hover {
-    background-color: #218838;
-}
-
-.finalizar-venda-btn:disabled {
-    background-color: #aaa;
-    cursor: not-allowed;
-}
-
-
-/* === RESPONSIVIDADE PARA TELAS MENORES (EX: CELULARES) === */
-@media (max-width: 768px) {
-    .pdv-grid {
-        grid-template-columns: 1fr; /* Colunas empilhadas */
-    }
-
-    .dashboard-pdv {
-        height: auto; /* Altura automática em telas menores */
-    }
-}
-
-/* Estilos para a nova tela de Fechamento de Venda */
+/* === NOVA TELA DE FECHAMENTO DE VENDA === */
 .fechamento-venda-container {
     padding: 20px;
     max-width: 700px;
@@ -185,14 +113,12 @@
     flex-direction: column;
     gap: 20px;
 }
-
 .fechamento-header {
     display: flex;
     align-items: center;
     gap: 20px;
     margin-bottom: 10px;
 }
-
 .voltar-btn {
     background: none;
     border: 1px solid #ccc;
@@ -201,39 +127,50 @@
     cursor: pointer;
     font-size: 1em;
 }
-
 .resumo-carrinho .resumo-item {
     display: flex;
     justify-content: space-between;
     padding: 8px 0;
     border-bottom: 1px solid #f0f0f0;
 }
-
 .resumo-carrinho .resumo-total {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     padding-top: 10px;
     margin-top: 10px;
     font-size: 1.2em;
     border-top: 2px solid #333;
 }
 
-.link-button {
-    background: none;
-    border: none;
-    color: #007bff;
-    text-decoration: underline;
-    cursor: pointer;
-    padding: 0;
-    margin-top: 10px;
+.search-container { position: relative; }
+.search-results {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    z-index: 10;
+    max-height: 150px;
+    overflow-y: auto;
 }
+.result-item { padding: 10px; cursor: pointer; }
+.result-item:hover { background-color: #f0f0f0; }
 
-.botoes-pagamento {
+.selected-cliente-card {
     display: flex;
-    gap: 10px;
-    margin-top: 10px;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #e9f5ff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    border: 1px solid #b3d7ff;
 }
-
+.link-button {
+    background: none; border: none; color: #007bff;
+    text-decoration: underline; cursor: pointer; padding: 0; margin-top: 10px;
+}
+.botoes-pagamento { display: flex; gap: 10px; margin-top: 10px; }
 .pagamento-btn {
     padding: 12px 20px;
     flex-grow: 1;
@@ -242,7 +179,11 @@
     cursor: pointer;
     border-radius: 5px;
 }
-
+.pagamento-btn.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
 .confirmar-venda-btn {
     padding: 15px;
     font-size: 1.2em;
@@ -253,4 +194,21 @@
     border-radius: 5px;
     cursor: pointer;
     margin-top: 20px;
+}
+
+/* --- ESTILOS GERAIS PARA MODAIS --- */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 1.5rem;
+}
+.input-field {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+    margin-bottom: 1rem;
 }
